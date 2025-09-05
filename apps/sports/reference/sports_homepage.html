@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSN Sports - Live Sports, Shows & News</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700&family=Merriweather:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    
+    <!-- Custom Theme -->
+    <link rel="stylesheet" href="sports_theme_1.css">
+    
+    <style>
+        /* Additional custom styles for this implementation */
+        .carousel-container {
+            scroll-behavior: smooth;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+        
+        .carousel-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .card-shimmer {
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        .live-pulse {
+            animation: livePulse 2s ease-in-out infinite;
+        }
+        
+        @keyframes livePulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+                background-color: rgb(34, 197, 94);
+            }
+            50% { 
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+                background-color: rgb(16, 185, 129);
+            }
+        }
+        
+        .breaking-flash {
+            animation: breakingFlash 2s ease-in-out infinite;
+        }
+        
+        @keyframes breakingFlash {
+            0%, 100% { border-color: transparent; }
+            50% { border-color: rgb(239, 68, 68); }
+        }
+        
+        .score-bounce {
+            animation: scoreBounce 0.6s ease-out;
+        }
+        
+        @keyframes scoreBounce {
+            0% { transform: scale(0.8) translateY(10px); opacity: 0; }
+            50% { transform: scale(1.1) translateY(-5px); }
+            100% { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        
+        .card-hover-lift {
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        
+        .card-hover-lift:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        }
+        
+        .stagger-animation {
+            animation: staggerIn 0.6s ease-out forwards;
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        
+        @keyframes staggerIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Bento grid responsive layout */
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+            grid-auto-rows: minmax(140px, auto);
+        }
+        
+        .bento-large {
+            grid-column: span 2;
+            grid-row: span 2;
+        }
+        
+        .bento-wide {
+            grid-column: span 2;
+        }
+        
+        .bento-tall {
+            grid-row: span 2;
+        }
+        
+        @media (max-width: 768px) {
+            .bento-large, .bento-wide {
+                grid-column: span 1;
+            }
+            .bento-tall {
+                grid-row: span 1;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation Header -->
+    <nav class="bg-black/90 backdrop-blur-md border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo -->
+                <div class="flex items-center space-x-4">
+                    <div class="text-2xl font-bold text-red-500">CSN</div>
+                    <div class="hidden md:flex items-center space-x-6 text-sm">
+                        <a href="#" class="text-white hover:text-red-400 transition-colors">Home</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">Live</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">Sports</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">Shows</a>
+                        <a href="#" class="text-gray-300 hover:text-white transition-colors">News</a>
+                    </div>
+                </div>
+                
+                <!-- Search and User -->
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <input type="text" placeholder="Search..." class="bg-gray-800 border border-gray-600 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent">
+                        <i data-lucide="search" class="absolute right-3 top-2.5 w-4 h-4 text-gray-400"></i>
+                    </div>
+                    <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                        Sign In
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Live Sports Hero Section -->
+    <section class="relative h-screen overflow-hidden">
+        <!-- Live Indicator Bar -->
+        <div class="absolute top-0 left-0 right-0 bg-red-600 text-white py-2 px-4 z-20">
+            <div class="max-w-7xl mx-auto flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-3 h-3 bg-green-500 rounded-full live-pulse"></div>
+                    <span class="font-semibold">LIVE: NBA Lakers vs Warriors - Q3 12:45</span>
+                    <span class="text-red-200">45,328 viewers</span>
+                </div>
+                <div class="flex items-center space-x-4 text-sm">
+                    <span class="score-bounce font-bold">LAL 89 - 92 GSW</span>
+                    <button class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs transition-colors">
+                        Chat
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hero Video Player -->
+        <div class="absolute inset-0 pt-12">
+            <div class="relative w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+                <!-- Placeholder for video player -->
+                <img src="https://picsum.photos/1920/1080?random=basketball" alt="Live NBA Game" class="w-full h-full object-cover opacity-80">
+                
+                <!-- Video Controls Overlay -->
+                <div class="absolute bottom-4 left-4 right-4 bg-black/50 backdrop-blur-sm rounded-lg p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <button class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors">
+                                <i data-lucide="play" class="w-5 h-5"></i>
+                            </button>
+                            <button class="bg-white/20 hover:bg-white/30 p-2 rounded-full transition-colors">
+                                <i data-lucide="volume-2" class="w-5 h-5"></i>
+                            </button>
+                            <span class="text-sm">Lakers @ Warriors - Live</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <button class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors">
+                                Fullscreen
+                            </button>
+                            <button class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-sm transition-colors">
+                                Quality: HD
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Content Sections -->
+    <main class="relative z-10 -mt-32 pb-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+            
+            <!-- Live Sports Carousel -->
+            <section class="stagger-animation" style="animation-delay: 0.1s">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <div class="w-3 h-3 bg-green-500 rounded-full mr-3 live-pulse"></div>
+                        Live Sports
+                    </h2>
+                    <button class="text-red-400 hover:text-red-300 text-sm font-medium">See All</button>
+                </div>
+                <div class="carousel-container overflow-x-auto">
+                    <div class="flex space-x-4 pb-4">
+                        <div class="flex-none w-80 sports-card card-hover-lift p-4">
+                            <div class="relative mb-3">
+                                <img src="https://picsum.photos/320/180?random=nba" alt="NBA Live" class="w-full h-40 object-cover rounded-lg">
+                                <div class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                    LIVE
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    15K viewers
+                                </div>
+                            </div>
+                            <h3 class="font-semibold mb-1">NBA: Celtics vs Heat</h3>
+                            <p class="text-gray-400 text-sm">Eastern Conference Finals</p>
+                        </div>
+                        
+                        <div class="flex-none w-80 sports-card card-hover-lift p-4">
+                            <div class="relative mb-3">
+                                <img src="https://picsum.photos/320/180?random=soccer" alt="Soccer Live" class="w-full h-40 object-cover rounded-lg">
+                                <div class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                    LIVE
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    8.2K viewers
+                                </div>
+                            </div>
+                            <h3 class="font-semibold mb-1">Premier League Live</h3>
+                            <p class="text-gray-400 text-sm">Manchester United vs Arsenal</p>
+                        </div>
+                        
+                        <div class="flex-none w-80 sports-card card-hover-lift p-4">
+                            <div class="relative mb-3">
+                                <img src="https://picsum.photos/320/180?random=tennis" alt="Tennis Live" class="w-full h-40 object-cover rounded-lg">
+                                <div class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                    LIVE
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    3.1K viewers
+                                </div>
+                            </div>
+                            <h3 class="font-semibold mb-1">Wimbledon Finals</h3>
+                            <p class="text-gray-400 text-sm">Djokovic vs Alcaraz</p>
+                        </div>
+                        
+                        <div class="flex-none w-80 sports-card card-hover-lift p-4">
+                            <div class="relative mb-3">
+                                <img src="https://picsum.photos/320/180?random=football" alt="NFL Live" class="w-full h-40 object-cover rounded-lg">
+                                <div class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold">
+                                    LIVE
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    22K viewers
+                                </div>
+                            </div>
+                            <h3 class="font-semibold mb-1">NFL: Chiefs vs Bills</h3>
+                            <p class="text-gray-400 text-sm">AFC Championship</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sports Shows & Talk -->
+            <section class="stagger-animation" style="animation-delay: 0.2s">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i data-lucide="tv" class="w-6 h-6 mr-3 text-blue-400"></i>
+                        Sports Shows & Talk
+                    </h2>
+                    <button class="text-red-400 hover:text-red-300 text-sm font-medium">See All</button>
+                </div>
+                <div class="carousel-container overflow-x-auto">
+                    <div class="flex space-x-4 pb-4">
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <img src="https://picsum.photos/288/162?random=sportscenter" alt="SportsCenter" class="w-full h-40 object-cover rounded-t-lg">
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">SportsCenter</h3>
+                                <p class="text-gray-400 text-sm mb-2">Latest sports highlights and news</p>
+                                <span class="text-yellow-400 text-xs">New Episode</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <img src="https://picsum.photos/288/162?random=firsttake" alt="First Take" class="w-full h-40 object-cover rounded-t-lg">
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">First Take</h3>
+                                <p class="text-gray-400 text-sm mb-2">Debate show with Stephen A. Smith</p>
+                                <span class="text-green-400 text-xs">Live Now</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <img src="https://picsum.photos/288/162?random=undisputed" alt="Undisputed" class="w-full h-40 object-cover rounded-t-lg">
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Undisputed</h3>
+                                <p class="text-gray-400 text-sm mb-2">Sports debate and analysis</p>
+                                <span class="text-gray-400 text-xs">Available</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <img src="https://picsum.photos/288/162?random=pti" alt="PTI" class="w-full h-40 object-cover rounded-t-lg">
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Pardon The Interruption</h3>
+                                <p class="text-gray-400 text-sm mb-2">Daily sports talk show</p>
+                                <span class="text-yellow-400 text-xs">New Episode</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sports News & Analysis - Bento Box Layout -->
+            <section class="stagger-animation" style="animation-delay: 0.3s">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i data-lucide="newspaper" class="w-6 h-6 mr-3 text-orange-400"></i>
+                        Sports News & Analysis
+                    </h2>
+                    <button class="text-red-400 hover:text-red-300 text-sm font-medium">See All</button>
+                </div>
+                
+                <div class="bento-grid">
+                    <!-- Breaking News - Large Card -->
+                    <div class="bento-large sports-card card-hover-lift p-6 breaking-flash border-2">
+                        <div class="flex items-center mb-3">
+                            <span class="bg-red-600 text-white px-2 py-1 rounded text-xs font-semibold mr-2">BREAKING</span>
+                            <span class="text-gray-400 text-sm">2 mins ago</span>
+                        </div>
+                        <h3 class="text-xl font-bold mb-3">Lakers Trade for All-Star Point Guard</h3>
+                        <p class="text-gray-300 mb-4">Los Angeles Lakers have completed a blockbuster trade to acquire Russell Westbrook in exchange for multiple players and draft picks. The move signals their championship ambitions for the upcoming season.</p>
+                        <button class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded text-sm font-medium transition-colors">
+                            Read Full Story
+                        </button>
+                    </div>
+                    
+                    <!-- Trade Rumors -->
+                    <div class="sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="shuffle" class="w-4 h-4 text-blue-400 mr-2"></i>
+                            <span class="text-blue-400 text-sm font-medium">TRADE RUMORS</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">NBA Trade Deadline Buzz</h4>
+                        <p class="text-gray-400 text-sm">Multiple teams eyeing veteran stars...</p>
+                    </div>
+                    
+                    <!-- Injury Update -->
+                    <div class="sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="heart-pulse" class="w-4 h-4 text-red-400 mr-2"></i>
+                            <span class="text-red-400 text-sm font-medium">INJURY UPDATE</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">Mahomes Cleared for Sunday</h4>
+                        <p class="text-gray-400 text-sm">Chiefs QB passes concussion protocol...</p>
+                    </div>
+                    
+                    <!-- MVP Race - Tall Card -->
+                    <div class="bento-tall sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-3">
+                            <i data-lucide="trophy" class="w-4 h-4 text-yellow-400 mr-2"></i>
+                            <span class="text-yellow-400 text-sm font-medium">MVP RACE</span>
+                        </div>
+                        <h4 class="font-semibold mb-3">2024 MVP Candidates</h4>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Nikola Jokić</span>
+                                <span class="text-yellow-400 text-sm">+120</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Luka Dončić</span>
+                                <span class="text-yellow-400 text-sm">+180</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Jayson Tatum</span>
+                                <span class="text-yellow-400 text-sm">+250</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm">Giannis</span>
+                                <span class="text-yellow-400 text-sm">+300</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Draft Analysis -->
+                    <div class="sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="users" class="w-4 h-4 text-green-400 mr-2"></i>
+                            <span class="text-green-400 text-sm font-medium">DRAFT ANALYSIS</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">2024 Draft Prospects</h4>
+                        <p class="text-gray-400 text-sm">Top college players to watch...</p>
+                    </div>
+                    
+                    <!-- Coaching News -->
+                    <div class="sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="whistle" class="w-4 h-4 text-purple-400 mr-2"></i>
+                            <span class="text-purple-400 text-sm font-medium">COACHING</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">Coaches on Hot Seat</h4>
+                        <p class="text-gray-400 text-sm">Several coaches face pressure...</p>
+                    </div>
+                    
+                    <!-- Fantasy Tips -->
+                    <div class="sports-card card-hover-lift p-4">
+                        <div class="flex items-center mb-2">
+                            <i data-lucide="zap" class="w-4 h-4 text-cyan-400 mr-2"></i>
+                            <span class="text-cyan-400 text-sm font-medium">FANTASY</span>
+                        </div>
+                        <h4 class="font-semibold mb-2">Week 12 Sleepers</h4>
+                        <p class="text-gray-400 text-sm">Under-the-radar fantasy picks...</p>
+                    </div>
+                    
+                    <!-- Standings - Wide Card -->
+                    <div class="bento-wide sports-card card-hover-lift p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center">
+                                <i data-lucide="bar-chart" class="w-4 h-4 text-blue-400 mr-2"></i>
+                                <span class="text-blue-400 text-sm font-medium">STANDINGS</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">Updated 5 mins ago</span>
+                        </div>
+                        <h4 class="font-semibold mb-3">AFC East Updated</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div class="flex justify-between">
+                                <span>Buffalo Bills</span>
+                                <span class="text-green-400">11-3</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Miami Dolphins</span>
+                                <span>8-6</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>New York Jets</span>
+                                <span>7-7</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>New England</span>
+                                <span>4-10</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Game Highlights -->
+            <section class="stagger-animation" style="animation-delay: 0.4s">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i data-lucide="zap" class="w-6 h-6 mr-3 text-yellow-400"></i>
+                        Game Highlights
+                    </h2>
+                    <button class="text-red-400 hover:text-red-300 text-sm font-medium">See All</button>
+                </div>
+                <div class="carousel-container overflow-x-auto">
+                    <div class="flex space-x-4 pb-4">
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/288/162?random=highlight1" alt="Lakers Highlight" class="w-full h-40 object-cover rounded-t-lg">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-t-lg opacity-0 hover:opacity-100 transition-opacity">
+                                    <button class="bg-white/90 text-black p-3 rounded-full">
+                                        <i data-lucide="play" class="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    2:15
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">LeBron's Game Winner</h3>
+                                <p class="text-gray-400 text-sm">Lakers vs Warriors highlight</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/288/162?random=highlight2" alt="Chiefs Highlight" class="w-full h-40 object-cover rounded-t-lg">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-t-lg opacity-0 hover:opacity-100 transition-opacity">
+                                    <button class="bg-white/90 text-black p-3 rounded-full">
+                                        <i data-lucide="play" class="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    1:43
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Mahomes 50-yard TD</h3>
+                                <p class="text-gray-400 text-sm">Chiefs vs Bills highlight</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/288/162?random=highlight3" alt="Soccer Highlight" class="w-full h-40 object-cover rounded-t-lg">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-t-lg opacity-0 hover:opacity-100 transition-opacity">
+                                    <button class="bg-white/90 text-black p-3 rounded-full">
+                                        <i data-lucide="play" class="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    0:58
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Benzema Wonder Goal</h3>
+                                <p class="text-gray-400 text-sm">Real Madrid vs Barcelona</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-72 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/288/162?random=highlight4" alt="Tennis Highlight" class="w-full h-40 object-cover rounded-t-lg">
+                                <div class="absolute inset-0 bg-black/40 flex items-center justify-center rounded-t-lg opacity-0 hover:opacity-100 transition-opacity">
+                                    <button class="bg-white/90 text-black p-3 rounded-full">
+                                        <i data-lucide="play" class="w-6 h-6"></i>
+                                    </button>
+                                </div>
+                                <div class="absolute bottom-2 right-2 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    3:22
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Serena's Comeback</h3>
+                                <p class="text-gray-400 text-sm">Wimbledon Finals highlight</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Full Games & Matches -->
+            <section class="stagger-animation" style="animation-delay: 0.5s">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-2xl font-bold flex items-center">
+                        <i data-lucide="film" class="w-6 h-6 mr-3 text-purple-400"></i>
+                        Full Games & Matches
+                    </h2>
+                    <button class="text-red-400 hover:text-red-300 text-sm font-medium">See All</button>
+                </div>
+                <div class="carousel-container overflow-x-auto">
+                    <div class="flex space-x-4 pb-4">
+                        <div class="flex-none w-80 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/320/180?random=nbafinals" alt="NBA Finals" class="w-full h-48 object-cover rounded-t-lg">
+                                <div class="absolute top-3 left-3 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-semibold">
+                                    CHAMPIONSHIP
+                                </div>
+                                <div class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    2:47:15
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">2023 NBA Finals Game 7</h3>
+                                <p class="text-gray-400 text-sm mb-2">Denver Nuggets vs Miami Heat</p>
+                                <span class="text-purple-400 text-xs">Full Game Available</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-80 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/320/180?random=superbowl" alt="Super Bowl" class="w-full h-48 object-cover rounded-t-lg">
+                                <div class="absolute top-3 left-3 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-semibold">
+                                    SUPER BOWL
+                                </div>
+                                <div class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    3:42:22
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">Super Bowl LVII</h3>
+                                <p class="text-gray-400 text-sm mb-2">Chiefs vs Eagles</p>
+                                <span class="text-purple-400 text-xs">Full Game Available</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex-none w-80 sports-card card-hover-lift">
+                            <div class="relative">
+                                <img src="https://picsum.photos/320/180?random=worldcup" alt="World Cup" class="w-full h-48 object-cover rounded-t-lg">
+                                <div class="absolute top-3 left-3 bg-yellow-500 text-black px-2 py-1 rounded text-xs font-semibold">
+                                    WORLD CUP
+                                </div>
+                                <div class="absolute bottom-3 right-3 bg-black/70 text-white px-2 py-1 rounded text-xs">
+                                    2:15:33
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold mb-2">2022 World Cup Final</h3>
+                                <p class="text-gray-400 text-sm mb-2">Argentina vs France</p>
+                                <span class="text-purple-400 text-xs">Full Match Available</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-gray-800 mt-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="text-2xl font-bold text-red-500 mb-4">CSN</div>
+                    <p class="text-gray-400 text-sm">Your ultimate destination for live sports, shows, and news.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Sports</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">NBA</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">NFL</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Soccer</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Tennis</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Shows</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">SportsCenter</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">First Take</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Undisputed</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">PTI</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400 text-sm">
+                <p>&copy; 2024 CSN Sports Network. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript for interactions -->
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Stagger animation for sections
+        const sections = document.querySelectorAll('.stagger-animation');
+        sections.forEach((section, index) => {
+            section.style.animationDelay = `${index * 0.1}s`;
+        });
+
+        // Live viewer count animation
+        function updateViewerCount() {
+            const viewerElements = document.querySelectorAll('[class*="viewers"]');
+            viewerElements.forEach(element => {
+                const current = parseInt(element.textContent.replace(/[^\d]/g, ''));
+                const change = Math.floor(Math.random() * 100) - 50;
+                const newCount = Math.max(1000, current + change);
+                element.textContent = `${(newCount / 1000).toFixed(1)}K viewers`;
+            });
+        }
+
+        // Update viewer counts every 5 seconds
+        setInterval(updateViewerCount, 5000);
+
+        // Smooth scroll for carousels
+        const carousels = document.querySelectorAll('.carousel-container');
+        carousels.forEach(carousel => {
+            let isDown = false;
+            let startX;
+            let scrollLeft;
+
+            carousel.addEventListener('mousedown', (e) => {
+                isDown = true;
+                startX = e.pageX - carousel.offsetLeft;
+                scrollLeft = carousel.scrollLeft;
+            });
+
+            carousel.addEventListener('mouseleave', () => {
+                isDown = false;
+            });
+
+            carousel.addEventListener('mouseup', () => {
+                isDown = false;
+            });
+
+            carousel.addEventListener('mousemove', (e) => {
+                if (!isDown) return;
+                e.preventDefault();
+                const x = e.pageX - carousel.offsetLeft;
+                const walk = (x - startX) * 2;
+                carousel.scrollLeft = scrollLeft - walk;
+            });
+        });
+
+        // Card interaction effects
+        const cards = document.querySelectorAll('.card-hover-lift');
+        cards.forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.style.transform = 'translateY(-4px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+
+        // Breaking news flash effect
+        const breakingCards = document.querySelectorAll('.breaking-flash');
+        breakingCards.forEach(card => {
+            setInterval(() => {
+                card.style.borderColor = '#ef4444';
+                setTimeout(() => {
+                    card.style.borderColor = 'transparent';
+                }, 1000);
+            }, 3000);
+        });
+
+        // Score update animation
+        function animateScore() {
+            const scoreElements = document.querySelectorAll('.score-bounce');
+            scoreElements.forEach(element => {
+                element.classList.remove('score-bounce');
+                void element.offsetWidth; // Trigger reflow
+                element.classList.add('score-bounce');
+            });
+        }
+
+        // Animate scores every 30 seconds (simulating live updates)
+        setInterval(animateScore, 30000);
+
+        // Search functionality
+        const searchInput = document.querySelector('input[placeholder="Search..."]');
+        searchInput.addEventListener('focus', () => {
+            searchInput.style.transform = 'scale(1.02)';
+            searchInput.style.boxShadow = '0 0 0 2px rgb(239, 68, 68)';
+        });
+
+        searchInput.addEventListener('blur', () => {
+            searchInput.style.transform = 'scale(1)';
+            searchInput.style.boxShadow = 'none';
+        });
+
+        // Button interactions
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {
+            button.addEventListener('mousedown', () => {
+                button.style.transform = 'scale(0.96)';
+            });
+            
+            button.addEventListener('mouseup', () => {
+                button.style.transform = 'scale(1)';
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                button.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

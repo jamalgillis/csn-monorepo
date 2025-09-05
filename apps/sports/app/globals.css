@@ -1,0 +1,291 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Updated to sports streaming platform theme with dark mode colors */
+:root {
+  /* Base Colors - Dark sports broadcast theme */
+  --background: oklch(0.08 0 0); /* Near black */
+  --foreground: oklch(0.95 0 0); /* Bright white text */
+  --card: oklch(0.12 0 0); /* Dark cards */
+  --card-foreground: oklch(0.92 0 0); /* Card text */
+  --popover: oklch(0.09 0 0); /* Popover background */
+  --popover-foreground: oklch(0.95 0 0); /* Popover text */
+
+  /* Primary - Sports Red (ESPN/broadcast red) */
+  --primary: oklch(0.55 0.28 15.0); /* Sports broadcast red */
+  --primary-foreground: oklch(0.98 0 0); /* White on red */
+
+  /* Secondary - Electric Blue (live indicator) */
+  --secondary: oklch(0.6 0.25 250.0); /* Electric blue */
+  --secondary-foreground: oklch(0.98 0 0); /* White on blue */
+
+  /* Muted - Dark gray tones */
+  --muted: oklch(0.18 0 0); /* Muted backgrounds */
+  --muted-foreground: oklch(0.65 0 0); /* Muted text */
+
+  /* Accent - Highlight yellow (stats/scores) */
+  --accent: oklch(0.8 0.2 85.0); /* Bright yellow */
+  --accent-foreground: oklch(0.1 0 0); /* Dark text on yellow */
+
+  /* Destructive - Error red */
+  --destructive: oklch(0.5 0.3 25.0);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  /* Borders and inputs */
+  --border: oklch(0.22 0 0); /* Subtle borders */
+  --input: oklch(0.15 0 0); /* Input backgrounds */
+  --ring: oklch(0.55 0.28 15.0); /* Focus rings - primary red */
+
+  /* Chart colors - Sports team inspired */
+  --chart-1: oklch(0.55 0.28 15.0); /* Primary red */
+  --chart-2: oklch(0.6 0.25 250.0); /* Electric blue */
+  --chart-3: oklch(0.8 0.2 85.0); /* Highlight yellow */
+  --chart-4: oklch(0.55 0.2 130.0); /* Success green */
+  --chart-5: oklch(0.65 0.22 280.0); /* Purple accent */
+
+  /* Sidebar */
+  --sidebar: oklch(0.09 0 0);
+  --sidebar-foreground: oklch(0.92 0 0);
+  --sidebar-primary: oklch(0.55 0.28 15.0);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.18 0 0);
+  --sidebar-accent-foreground: oklch(0.92 0 0);
+  --sidebar-border: oklch(0.22 0 0);
+  --sidebar-ring: oklch(0.55 0.28 15.0);
+
+  /* Border radius - Modern but not too rounded */
+  --radius: 0.5rem;
+
+  /* Sports-specific custom properties */
+  --live-indicator: oklch(0.55 0.3 120.0); /* Bright green for live */
+  --score-highlight: oklch(0.8 0.2 85.0); /* Yellow for scores */
+  --team-home: oklch(0.6 0.25 250.0); /* Blue for home team */
+  --team-away: oklch(0.55 0.28 15.0); /* Red for away team */
+  --breaking-news: oklch(0.7 0.25 30.0); /* Orange for breaking news */
+}
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-merriweather);
+  --font-mono: var(--font-jetbrains-mono);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    line-height: 1.5;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Added sports-specific utility classes and animations */
+  .live-indicator {
+    background-color: var(--live-indicator);
+    color: var(--background);
+    animation: pulse 2s infinite;
+  }
+
+  .score-highlight {
+    background-color: var(--score-highlight);
+    color: var(--background);
+    font-weight: 700;
+  }
+
+  .breaking-news {
+    background-color: var(--breaking-news);
+    color: var(--background);
+    font-weight: 600;
+  }
+
+  .sports-card {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 6px -1px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.3);
+    transition: all 0.3s ease;
+  }
+
+  .sports-card:hover {
+    box-shadow: 0 10px 15px -3px hsl(0 0% 0% / 0.4), 0 4px 6px -2px hsl(0 0% 0% / 0.4);
+    transform: translateY(-2px);
+  }
+
+  /* Bento box grid system */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    grid-auto-rows: minmax(140px, auto);
+  }
+
+  .bento-large {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .bento-wide {
+    grid-column: span 2;
+  }
+
+  .bento-tall {
+    grid-row: span 2;
+  }
+
+  @media (max-width: 768px) {
+    .bento-large,
+    .bento-wide {
+      grid-column: span 1;
+    }
+    .bento-tall {
+      grid-row: span 1;
+    }
+  }
+
+  /* Added scrollbar hiding utility for carousels */
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Added line clamp utility for text truncation */
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Added animate-fade-in utility class for StaggerAnimation component */
+  .animate-fade-in {
+    animation: fadeIn 0.7s ease-out forwards;
+  }
+
+  /* Added utility class for animated breaking news border */
+  .animate-pulse-border {
+    animation: pulseBorder 2s ease-in-out infinite;
+  }
+}
+
+/* Added keyframe animations for sports interactions */
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes livePulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    background-color: rgb(34, 197, 94);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+    background-color: rgb(16, 185, 129);
+  }
+}
+
+@keyframes breakingFlash {
+  0%,
+  100% {
+    border-color: transparent;
+  }
+  50% {
+    border-color: rgb(239, 68, 68);
+  }
+}
+
+@keyframes scoreBounce {
+  0% {
+    transform: scale(0.8) translateY(10px);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1) translateY(-5px);
+  }
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseBorder {
+  0%,
+  100% {
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+  50% {
+    border-color: rgba(239, 68, 68, 0.8);
+  }
+}
