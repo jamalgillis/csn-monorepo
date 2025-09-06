@@ -1,0 +1,6 @@
+{
+  "buildCommand": "turbo run build --filter=sports",
+  "outputDirectory": "apps/sports/.next",
+  "installCommand": "pnpm install",
+  "framework": null
+}
