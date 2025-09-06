@@ -42,7 +42,7 @@ export default function AdminGamesPage() {
   // Fetch real games data from Convex
   const gamesData = useQuery(api.sports.getAllGames)
   const updateGameStateMutation = useMutation(api.sports.updateGameState)
-  const updateGameStatusMutation = useMutation(api.sports.updateGameStatus)
+  const updateGameStatusMutation = useMutation(api.sports.updateGameState)
 
   const [editModalOpen, setEditModalOpen] = useState(false)
   const [editingGame, setEditingGame] = useState<GameWithDetails | null>(null)
