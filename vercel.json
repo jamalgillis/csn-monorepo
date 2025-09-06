@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cp -r apps/sports/convex . && turbo run build --filter=sports",
+  "buildCommand": "rm -rf convex && cp -r apps/sports/convex . && turbo run build --filter=sports",
   "outputDirectory": "apps/sports/.next",
   "installCommand": "pnpm install",
   "framework": null
