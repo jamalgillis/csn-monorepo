@@ -1,7 +1,10 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useRouter } from "next/navigation"
+import { useQuery } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
 import { Header } from "@/components/navigation/header"
 import {
   Play,
@@ -38,6 +41,12 @@ import { Input } from "@/components/ui/input"
 
 export default function ShowDetailPage() {
   const params = useParams()
+  const router = useRouter()
+  const showId = params.showId as Id<"content">
+  
+  // Fetch show details from database
+  const showData = useQuery(api.sports.getShowDetails, { showId })
+  
   const [isPlaying, setIsPlaying] = useState(true)
   const [activeTab, setActiveTab] = useState("episodes")
   const [isSubscribed, setIsSubscribed] = useState(false)
@@ -89,6 +98,46 @@ export default function ShowDetailPage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Loading state
+  if (showData === undefined) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+              <p className="mt-4 text-muted-foreground">Loading show...</p>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  // Show not found
+  if (showData === null) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold text-muted-foreground mb-4">Show Not Found</h1>
+            <p className="text-muted-foreground mb-8">The show you're looking for doesn't exist or has been removed.</p>
+            <button 
+              onClick={() => router.push('/shows')}
+              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90"
+            >
+              Back to Shows
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
+
+  const show = showData
+  
   const episodes = [
     {
       id: 1,
@@ -229,36 +278,8 @@ export default function ShowDetailPage() {
     },
   ]
 
-  const similarShows = [
-    {
-      id: 1,
-      title: "First Take",
-      description: "ESPN debate show",
-      thumbnail: "/sports-debate-show.png",
-      rating: 4.6,
-    },
-    {
-      id: 2,
-      title: "Pardon The Interruption",
-      description: "ESPN daily talk show",
-      thumbnail: "/espn-pardon-the-interruption.png",
-      rating: 4.7,
-    },
-    {
-      id: 3,
-      title: "Around the Horn",
-      description: "ESPN debate show",
-      thumbnail: "/placeholder.svg?height=162&width=288",
-      rating: 4.5,
-    },
-    {
-      id: 4,
-      title: "The Jump",
-      description: "ESPN NBA show",
-      thumbnail: "/placeholder.svg?height=162&width=288",
-      rating: 4.4,
-    },
-  ]
+  // Get similar shows from database query
+  const similarShows = showData?.similarShows || []
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -301,6 +322,7 @@ export default function ShowDetailPage() {
           <Button
             variant="ghost"
             className="text-muted-foreground hover:text-foreground p-0 transition-all hover:-translate-x-1"
+            onClick={() => router.push('/shows')}
           >
             <ChevronLeft className="w-5 h-5 mr-2" />
             Back to Shows
@@ -311,17 +333,28 @@ export default function ShowDetailPage() {
         <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <div className="relative aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
             <div className="absolute top-4 left-4 z-20 flex items-center space-x-3">
-              <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center animate-pulse">
-                <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
-                LIVE
-              </div>
+              {show.status === 'live' ? (
+                <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center animate-pulse">
+                  <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
+                  LIVE
+                </div>
+              ) : (
+                <div className="bg-gray-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+                  UPCOMING
+                </div>
+              )}
               <div className="bg-black/70 backdrop-blur-sm text-white px-3 py-1 rounded-full text-sm">
                 {viewerCount.toLocaleString()} viewers
               </div>
             </div>
 
             {/* Video Content */}
-            <img src="/generic-sports-broadcast.png" alt="SportsCenter Live" className="w-full h-full object-cover" />
+            <img 
+              src={show.backdrop_url || show.poster_url || "/placeholder.svg"} 
+              alt={show.title} 
+              className="w-full h-full object-cover" 
+            />
 
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm p-6">
               <div className="flex items-center justify-between">
@@ -341,7 +374,7 @@ export default function ShowDetailPage() {
                   >
                     <Volume2 className="w-5 h-5" />
                   </Button>
-                  <span className="text-sm font-medium text-white">SportsCenter Live</span>
+                  <span className="text-sm font-medium text-white">{show.title}</span>
                 </div>
                 <div className="flex items-center space-x-4">
                   <select className="bg-white/20 border border-white/30 rounded px-3 py-1 text-sm text-white backdrop-blur-sm">
@@ -374,8 +407,8 @@ export default function ShowDetailPage() {
             <div className="lg:col-span-2 bg-card border border-border rounded-lg p-6 hover:shadow-lg transition-all duration-300">
               <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h1 className="text-3xl font-bold mb-2">SportsCenter</h1>
-                  <p className="text-muted-foreground mb-3">ESPN's flagship sports news and highlights show</p>
+                  <h1 className="text-3xl font-bold mb-2">{show.title}</h1>
+                  <p className="text-muted-foreground mb-3">{show.description}</p>
                   <div className="flex items-center space-x-4 mb-4">
                     <div className="flex items-center space-x-1">
                       <div className="flex text-yellow-400">
@@ -390,29 +423,39 @@ export default function ShowDetailPage() {
                       <span className="text-sm text-muted-foreground ml-2">4.8/5</span>
                     </div>
                     <span className="text-sm text-muted-foreground">•</span>
-                    <span className="text-sm text-muted-foreground">2.1M subscribers</span>
+                    <span className="text-sm text-muted-foreground">{show.category}</span>
                   </div>
                 </div>
-                <div className="border-2 border-red-500 rounded-lg p-2 animate-pulse">
-                  <div className="text-center">
-                    <div className="text-red-400 font-semibold text-sm">LIVE NOW</div>
-                    <div className="text-xs text-muted-foreground">6:00 PM ET</div>
+                {show.status === 'live' && (
+                  <div className="border-2 border-red-500 rounded-lg p-2 animate-pulse">
+                    <div className="text-center">
+                      <div className="text-red-400 font-semibold text-sm">LIVE NOW</div>
+                      <div className="text-xs text-muted-foreground">{show.schedule || 'Live'}</div>
+                    </div>
                   </div>
-                </div>
+                )}
+                {show.status !== 'live' && (
+                  <div className="border-2 border-gray-500 rounded-lg p-2">
+                    <div className="text-center">
+                      <div className="text-gray-400 font-semibold text-sm">UPCOMING</div>
+                      <div className="text-xs text-muted-foreground">{show.schedule || 'TBA'}</div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center space-x-2">
                   <Calendar className="w-4 h-4 text-blue-400" />
-                  <span>Mon-Fri 6PM ET</span>
+                  <span>{show.schedule || 'Live'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Tv className="w-4 h-4 text-purple-400" />
-                  <span>Since 1979</span>
+                  <span>{show.year || 'Live Content'}</span>
                 </div>
                 <div className="flex items-center space-x-2">
                   <Radio className="w-4 h-4 text-green-400" />
-                  <span>Live Daily</span>
+                  <span>{show.status === 'live' ? 'Live Now' : show.category}</span>
                 </div>
               </div>
             </div>
@@ -467,16 +510,16 @@ export default function ShowDetailPage() {
                   <h4 className="font-semibold mb-3 text-sm">Show Stats</h4>
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Episodes this season</span>
-                      <span>50</span>
+                      <span className="text-muted-foreground">Category</span>
+                      <span>{show.category}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Total views</span>
-                      <span>15M</span>
+                      <span className="text-muted-foreground">Status</span>
+                      <span className={show.status === 'live' ? 'text-green-400' : 'text-gray-400'}>{show.status?.toUpperCase() || 'UPCOMING'}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-muted-foreground">Uptime</span>
-                      <span className="text-green-400">98%</span>
+                      <span className="text-muted-foreground">Year</span>
+                      <span>{show.year || 'Current'}</span>
                     </div>
                   </div>
                 </div>
@@ -871,36 +914,49 @@ export default function ShowDetailPage() {
               </div>
               <div className="overflow-x-auto">
                 <div className="flex space-x-4 pb-4">
-                  {similarShows.map((show) => (
+                  {similarShows.length > 0 ? similarShows.map((similarShow) => (
                     <div
-                      key={show.id}
-                      className="flex-none w-72 bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105"
+                      key={similarShow._id}
+                      className="flex-none w-72 bg-card border border-border rounded-lg overflow-hidden hover:shadow-lg transition-all duration-300 hover:-translate-y-1 hover:scale-105 cursor-pointer"
+                      onClick={() => router.push(`/shows/${similarShow._id}`)}
                     >
                       <img
-                        src={show.thumbnail || "/placeholder.svg"}
-                        alt={show.title}
+                        src={similarShow.poster_url || similarShow.backdrop_url || "/placeholder.svg"}
+                        alt={similarShow.title}
                         className="w-full h-40 object-cover"
                       />
                       <div className="p-4">
-                        <h3 className="font-semibold mb-2">{show.title}</h3>
-                        <p className="text-muted-foreground text-sm mb-2">{show.description}</p>
+                        <h3 className="font-semibold mb-2">{similarShow.title}</h3>
+                        <p className="text-muted-foreground text-sm mb-2">{similarShow.description}</p>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center text-yellow-400">
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`w-3 h-3 ${i < Math.floor(show.rating) ? "fill-current" : "opacity-30"}`}
+                                className={`w-3 h-3 ${i < 4 ? "fill-current" : "opacity-30"}`}
                               />
                             ))}
-                            <span className="text-xs text-muted-foreground ml-1">{show.rating}</span>
+                            <span className="text-xs text-muted-foreground ml-1">4.0</span>
                           </div>
-                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-red-300">
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-red-400 hover:text-red-300"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              router.push(`/shows/${similarShow._id}`);
+                            }}
+                          >
                             Watch
                           </Button>
                         </div>
                       </div>
                     </div>
-                  ))}
+                  )) : (
+                    <div className="flex items-center justify-center w-full py-8">
+                      <p className="text-muted-foreground">No similar shows available</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </section>

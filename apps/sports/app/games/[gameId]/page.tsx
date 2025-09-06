@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useQuery } from "convex/react"
+import { useRouter } from "next/navigation"
 import { Play, Maximize, Send } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -47,6 +48,7 @@ interface PlayerStat {
 
 export default function GamePage({ params }: GamePageProps) {
   const [gameId, setGameId] = useState<string | null>(null)
+  const router = useRouter()
 
   // Handle params Promise
   useEffect(() => {
@@ -55,16 +57,30 @@ export default function GamePage({ params }: GamePageProps) {
     })
   }, [params])
 
-  // Fetch game data from Convex
+  // Check if this ID might be from the content table
+  const contentCheck = useQuery(
+    api.content.getContentById,
+    gameId ? { id: gameId as Id<"content"> } : "skip"
+  )
+
+  // If we found content with this ID, redirect to shows page
+  useEffect(() => {
+    if (contentCheck && contentCheck.type === "show") {
+      router.replace(`/shows/${gameId}`)
+      return
+    }
+  }, [contentCheck, gameId, router])
+
+  // Fetch game data from Convex only if we haven't found content
   const gameData = useQuery(
     api.sports.getGameById,
-    gameId ? { gameId: gameId as Id<"games"> } : "skip"
+    (gameId && !contentCheck) ? { gameId: gameId as Id<"games"> } : "skip"
   )
 
   // Fetch other games for sidebar
   const otherGames = useQuery(
     api.sports.getOtherGames,
-    gameId ? { currentGameId: gameId as Id<"games"> } : "skip"
+    (gameId && !contentCheck) ? { currentGameId: gameId as Id<"games"> } : "skip"
   )
 
   const [events, setEvents] = useState<GameEvent[]>([
@@ -194,6 +210,18 @@ export default function GamePage({ params }: GamePageProps) {
         }
         return msg
       }),
+    )
+  }
+
+  // Show loading state if we're redirecting to a show
+  if (contentCheck && contentCheck.type === "show") {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg text-muted-foreground">Redirecting to show...</p>
+        </div>
+      </div>
     )
   }
 

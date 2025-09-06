@@ -18,78 +18,100 @@ import { Label } from "@/components/ui/label"
 import { Play, Pause, Square, Edit, Eye, Plus, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import Link from "next/link"
+import { useQuery, useMutation } from "convex/react"
+import { api } from "../../../convex/_generated/api"
+import { Id } from "../../../convex/_generated/dataModel"
+
+interface GameWithDetails {
+  _id: Id<"games">
+  homeTeam: string
+  awayTeam: string
+  homeScore: number
+  awayScore: number
+  status: "scheduled" | "in_progress" | "final" | "postponed"
+  sport: string
+  venue: string
+  gameDate: string
+  gameState?: {
+    quarter: string
+    timeLeft: string
+  } | null
+}
 
 export default function AdminGamesPage() {
-  const [games, setGames] = useState([
-    {
-      id: "lakers-warriors",
-      homeTeam: "Lakers",
-      awayTeam: "Warriors",
-      homeScore: 108,
-      awayScore: 112,
-      status: "live",
-      quarter: "Q4",
-      timeRemaining: "2:34",
-      viewers: 24891,
-      network: "ESPN",
-      playerUrl: "https://stream.example.com/live/lakers-warriors-2024",
-    },
-    {
-      id: "celtics-heat",
-      homeTeam: "Celtics",
-      awayTeam: "Heat",
-      homeScore: 95,
-      awayScore: 89,
-      status: "final",
-      quarter: "Final",
-      timeRemaining: "",
-      viewers: 18432,
-      network: "TNT",
-      playerUrl: "https://stream.example.com/replay/celtics-heat-2024",
-    },
-    {
-      id: "mavs-nuggets",
-      homeTeam: "Mavericks",
-      awayTeam: "Nuggets",
-      homeScore: 0,
-      awayScore: 0,
-      status: "scheduled",
-      quarter: "",
-      timeRemaining: "7:30 PM ET",
-      viewers: 0,
-      network: "NBA TV",
-      playerUrl: "",
-    },
-  ])
+  // Fetch real games data from Convex
+  const gamesData = useQuery(api.sports.getAllGames)
+  const updateGameStateMutation = useMutation(api.sports.updateGameState)
+  const updateGameStatusMutation = useMutation(api.sports.updateGameStatus)
 
   const [editModalOpen, setEditModalOpen] = useState(false)
-  const [editingGame, setEditingGame] = useState<any>(null)
+  const [editingGame, setEditingGame] = useState<GameWithDetails | null>(null)
+  const [scoreUpdates, setScoreUpdates] = useState<{[key: string]: {home: number, away: number}}>({})
+  const [volleyballModalOpen, setVolleyballModalOpen] = useState(false)
+  const [currentVolleyballGame, setCurrentVolleyballGame] = useState<GameWithDetails | null>(null)
+  const [volleyballState, setVolleyballState] = useState({
+    currentSet: 1,
+    setScores: { home: 0, away: 0 },
+    setsWon: { home: 0, away: 0 }
+  })
   const [editForm, setEditForm] = useState({
     homeTeam: "",
     awayTeam: "",
     homeScore: 0,
     awayScore: 0,
     status: "",
-    quarter: "",
-    timeRemaining: "",
-    viewers: 0,
-    network: "",
-    playerUrl: "",
+    sport: "",
+    venue: ""
   })
 
-  const updateScore = (gameId: string, team: "home" | "away", newScore: number) => {
-    setGames(
-      games.map((game) =>
-        game.id === gameId ? { ...game, [team === "home" ? "homeScore" : "awayScore"]: newScore } : game,
-      ),
+  // Loading state
+  if (!gamesData) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading games...</span>
+      </div>
     )
   }
 
-  const updateGameStatus = (gameId: string, newStatus: string) => {
-    setGames(games.map((game) => (game.id === gameId ? { ...game, status: newStatus } : game)))
+  const games = gamesData
+
+  const updateScore = async (gameId: Id<"games">, team: "home" | "away", newScore: number) => {
+    const game = games.find(g => g._id === gameId)
+    if (!game) return
+
+    const currentScores = scoreUpdates[gameId] || { home: game.homeScore, away: game.awayScore }
+    const updatedScores = { ...currentScores, [team]: newScore }
+    setScoreUpdates({ ...scoreUpdates, [gameId]: updatedScores })
+
+    // Update game state in database
+    try {
+      await updateGameStateMutation({
+        gameId,
+        eventType: "score_update",
+        scoreInfo: {
+          home_score: updatedScores.home,
+          away_score: updatedScores.away
+        },
+        description: `Score updated: ${updatedScores.away} - ${updatedScores.home}`
+      })
+    } catch (error) {
+      console.error("Failed to update score:", error)
+    }
   }
 
-  const openEditModal = (game: any) => {
+  const updateGameStatus = async (gameId: Id<"games">, newStatus: "scheduled" | "in_progress" | "final" | "postponed") => {
+    try {
+      await updateGameStatusMutation({
+        gameId,
+        status: newStatus
+      })
+    } catch (error) {
+      console.error("Failed to update game status:", error)
+    }
+  }
+
+  const openEditModal = (game: GameWithDetails) => {
     setEditingGame(game)
     setEditForm({
       homeTeam: game.homeTeam,
@@ -97,22 +119,21 @@ export default function AdminGamesPage() {
       homeScore: game.homeScore,
       awayScore: game.awayScore,
       status: game.status,
-      quarter: game.quarter,
-      timeRemaining: game.timeRemaining,
-      viewers: game.viewers,
-      network: game.network,
-      playerUrl: game.playerUrl || "",
+      sport: game.sport || "",
+      venue: game.venue
     })
     setEditModalOpen(true)
   }
 
   const saveGameEdit = () => {
     if (editingGame) {
-      setGames(games.map((game) => (game.id === editingGame.id ? { ...game, ...editForm } : game)))
+      // For now, just close the modal since we'd need additional mutations
+      // to update team names, venues, etc.
       setEditModalOpen(false)
       setEditingGame(null)
     }
   }
+
 
   return (
     <div className="space-y-6">
@@ -136,68 +157,91 @@ export default function AdminGamesPage() {
       {/* Live Games Quick Controls */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {games
-          .filter((game) => game.status === "live")
-          .map((game) => (
-            <Card key={game.id} className="border-primary/20">
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <Badge variant="default" className="bg-red-500 animate-pulse">
-                    LIVE
-                  </Badge>
-                  <div className="text-sm text-muted-foreground">{game.network}</div>
-                </div>
-                <CardTitle className="text-lg">
-                  {game.awayTeam} @ {game.homeTeam}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between text-2xl font-bold">
-                  <div className="flex items-center space-x-2">
-                    <span>{game.awayTeam}</span>
-                    <Input
-                      type="number"
-                      value={game.awayScore}
-                      onChange={(e) => updateScore(game.id, "away", Number.parseInt(e.target.value) || 0)}
-                      className="w-16 text-center"
-                    />
+          .filter((game) => game.status === "in_progress")
+          .map((game) => {
+            const displayScores = scoreUpdates[game._id] || { home: game.homeScore, away: game.awayScore }
+            return (
+              <Card key={game._id} className="border-primary/20">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="default" className="bg-red-500 animate-pulse">
+                      LIVE
+                    </Badge>
+                    <div className="text-sm text-muted-foreground">{game.sport}</div>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Input
-                      type="number"
-                      value={game.homeScore}
-                      onChange={(e) => updateScore(game.id, "home", Number.parseInt(e.target.value) || 0)}
-                      className="w-16 text-center"
-                    />
-                    <span>{game.homeTeam}</span>
+                  <CardTitle className="text-lg">
+                    {game.awayTeam} @ {game.homeTeam}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-2xl font-bold">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-normal">{game.awayTeam}</span>
+                      <Input
+                        type="number"
+                        value={displayScores.away}
+                        onChange={(e) => updateScore(game._id, "away", Number.parseInt(e.target.value) || 0)}
+                        className="w-16 text-center"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        type="number"
+                        value={displayScores.home}
+                        onChange={(e) => updateScore(game._id, "home", Number.parseInt(e.target.value) || 0)}
+                        className="w-16 text-center"
+                      />
+                      <span className="text-sm font-normal">{game.homeTeam}</span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <span>{game.quarter}</span>
-                  <span>{game.timeRemaining}</span>
-                  <span>{game.viewers.toLocaleString()} viewers</span>
-                </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{game.gameState?.quarter || "Live"}</span>
+                    <span>{game.gameState?.timeLeft || game.sport}</span>
+                    <span>{game.venue}</span>
+                  </div>
 
-                <div className="flex space-x-2">
-                  <Button size="sm" variant="outline">
-                    <Play className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Pause className="h-3 w-3" />
-                  </Button>
-                  <Button size="sm" variant="outline">
-                    <Square className="h-3 w-3" />
-                  </Button>
-                  <Link href={`/games/${game.id}`} target="_blank">
-                    <Button size="sm" variant="outline" className="ml-auto bg-transparent">
-                      <Eye className="mr-1 h-3 w-3" />
-                      View
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  <div className="flex space-x-2">
+                    {(game.sport && typeof game.sport === 'string' && game.sport.toLowerCase() === "volleyball") ? (
+                      <Button 
+                        size="sm" 
+                        variant="outline"
+                        onClick={() => {
+                          setCurrentVolleyballGame(game)
+                          setVolleyballState({
+                            currentSet: 1,
+                            setScores: { home: displayScores.home, away: displayScores.away },
+                            setsWon: { home: 0, away: 0 }
+                          })
+                          setVolleyballModalOpen(true)
+                        }}
+                      >
+                        Set Controls
+                      </Button>
+                    ) : (
+                      <>
+                        <Button size="sm" variant="outline">
+                          <Play className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Pause className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="outline">
+                          <Square className="h-3 w-3" />
+                        </Button>
+                      </>
+                    )}
+                    <Link href={`/games/${game._id}`} target="_blank">
+                      <Button size="sm" variant="outline" className="ml-auto bg-transparent">
+                        <Eye className="mr-1 h-3 w-3" />
+                        View
+                      </Button>
+                    </Link>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
       </div>
 
       {/* All Games Table */}
@@ -228,62 +272,76 @@ export default function AdminGamesPage() {
                 <TableHead>Game</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Time</TableHead>
-                <TableHead>Network</TableHead>
-                <TableHead>Viewers</TableHead>
+                <TableHead>Time/Date</TableHead>
+                <TableHead>Sport</TableHead>
+                <TableHead>Venue</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {games.map((game) => (
-                <TableRow key={game.id}>
-                  <TableCell>
-                    <div className="font-medium">
-                      {game.awayTeam} @ {game.homeTeam}
-                    </div>
-                  </TableCell>
-                  <TableCell>{game.status === "scheduled" ? "-" : `${game.awayScore} - ${game.homeScore}`}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={game.status === "live" ? "default" : "secondary"}
-                      className={game.status === "live" ? "bg-red-500 animate-pulse" : ""}
-                    >
-                      {game.status.toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {game.status === "live"
-                      ? `${game.quarter} ${game.timeRemaining}`
-                      : game.status === "scheduled"
-                        ? game.timeRemaining
-                        : "Final"}
-                  </TableCell>
-                  <TableCell>{game.network}</TableCell>
-                  <TableCell>{game.viewers.toLocaleString()}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline" onClick={() => openEditModal(game)}>
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Link href={`/games/${game.id}`} target="_blank">
-                        <Button size="sm" variant="outline">
-                          <Eye className="h-3 w-3" />
+              {games.map((game) => {
+                const displayScores = scoreUpdates[game._id] || { home: game.homeScore, away: game.awayScore }
+                return (
+                  <TableRow key={game._id}>
+                    <TableCell>
+                      <div className="font-medium">
+                        {game.awayTeam} @ {game.homeTeam}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {game.sport}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {game.status === "scheduled" ? "-" : `${displayScores.away} - ${displayScores.home}`}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={game.status === "in_progress" ? "default" : "secondary"}
+                        className={game.status === "in_progress" ? "bg-red-500 animate-pulse" : ""}
+                      >
+                        {game.status.replace("_", " ").toUpperCase()}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {game.status === "in_progress"
+                        ? `${game.gameState?.quarter || "Live"} ${game.gameState?.timeLeft || ""}`
+                        : game.status === "scheduled"
+                          ? new Date(game.gameDate).toLocaleDateString()
+                          : "Final"}
+                    </TableCell>
+                    <TableCell>{game.sport}</TableCell>
+                    <TableCell>{game.venue}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button size="sm" variant="outline" onClick={() => openEditModal(game)}>
+                          <Edit className="h-3 w-3" />
                         </Button>
-                      </Link>
-                      <Select value={game.status} onValueChange={(value) => updateGameStatus(game.id, value)}>
-                        <SelectTrigger className="w-24 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="scheduled">Scheduled</SelectItem>
-                          <SelectItem value="live">Live</SelectItem>
-                          <SelectItem value="final">Final</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
+                        <Link href={`/games/${game._id}`} target="_blank">
+                          <Button size="sm" variant="outline">
+                            <Eye className="h-3 w-3" />
+                          </Button>
+                        </Link>
+                        <Select 
+                          value={game.status} 
+                          onValueChange={(value: "scheduled" | "in_progress" | "final" | "postponed") => 
+                            updateGameStatus(game._id, value)
+                          }
+                        >
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="scheduled">Scheduled</SelectItem>
+                            <SelectItem value="in_progress">Live</SelectItem>
+                            <SelectItem value="final">Final</SelectItem>
+                            <SelectItem value="postponed">Postponed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                )
+              })}
             </TableBody>
           </Table>
         </CardContent>
@@ -343,44 +401,205 @@ export default function AdminGamesPage() {
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="network" className="text-right">
-                Network
+              <Label htmlFor="sport" className="text-right">
+                Sport
               </Label>
               <Input
-                id="network"
-                value={editForm.network}
-                onChange={(e) => setEditForm({ ...editForm, network: e.target.value })}
+                id="sport"
+                value={editForm.sport}
+                onChange={(e) => setEditForm({ ...editForm, sport: e.target.value })}
                 className="col-span-3"
               />
             </div>
             <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="viewers" className="text-right">
-                Viewers
+              <Label htmlFor="venue" className="text-right">
+                Venue
               </Label>
               <Input
-                id="viewers"
-                type="number"
-                value={editForm.viewers}
-                onChange={(e) => setEditForm({ ...editForm, viewers: Number(e.target.value) || 0 })}
+                id="venue"
+                value={editForm.venue}
+                onChange={(e) => setEditForm({ ...editForm, venue: e.target.value })}
                 className="col-span-3"
-              />
-            </div>
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="playerUrl" className="text-right">
-                Player URL
-              </Label>
-              <Input
-                id="playerUrl"
-                value={editForm.playerUrl}
-                onChange={(e) => setEditForm({ ...editForm, playerUrl: e.target.value })}
-                className="col-span-3"
-                placeholder="https://stream.example.com/..."
               />
             </div>
           </div>
           <DialogFooter>
             <Button type="submit" onClick={saveGameEdit}>
               Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Volleyball Set Control Modal */}
+      <Dialog open={volleyballModalOpen} onOpenChange={setVolleyballModalOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Volleyball Set Control</DialogTitle>
+            <DialogDescription>
+              {currentVolleyballGame && 
+                `Manage sets for ${currentVolleyballGame.awayTeam} @ ${currentVolleyballGame.homeTeam}`
+              }
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            {/* Current Set Display */}
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">Set {volleyballState.currentSet}</h3>
+              <div className="flex items-center justify-center space-x-8 text-2xl font-bold">
+                <div className="text-center">
+                  <div className="text-sm text-muted-foreground">{currentVolleyballGame?.awayTeam}</div>
+                  <div>{volleyballState.setScores.away}</div>
+                </div>
+                <div>-</div>
+                <div className="text-center">
+                  <div className="text-sm text-muted-foreground">{currentVolleyballGame?.homeTeam}</div>
+                  <div>{volleyballState.setScores.home}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Score Controls */}
+            <div className="flex justify-center space-x-4">
+              <div className="flex flex-col items-center space-y-2">
+                <Label>Away Score</Label>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, away: Math.max(0, prev.setScores.away - 1) }
+                    }))}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={volleyballState.setScores.away}
+                    onChange={(e) => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, away: Number(e.target.value) || 0 }
+                    }))}
+                    className="w-16 text-center"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, away: prev.setScores.away + 1 }
+                    }))}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center space-y-2">
+                <Label>Home Score</Label>
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, home: Math.max(0, prev.setScores.home - 1) }
+                    }))}
+                  >
+                    -
+                  </Button>
+                  <Input
+                    type="number"
+                    value={volleyballState.setScores.home}
+                    onChange={(e) => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, home: Number(e.target.value) || 0 }
+                    }))}
+                    className="w-16 text-center"
+                  />
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => setVolleyballState(prev => ({
+                      ...prev,
+                      setScores: { ...prev.setScores, home: prev.setScores.home + 1 }
+                    }))}
+                  >
+                    +
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            {/* Set Management */}
+            <div className="flex justify-center space-x-4">
+              <Button 
+                variant="default"
+                onClick={async () => {
+                  if (!currentVolleyballGame) return
+                  
+                  try {
+                    await updateGameStateMutation({
+                      gameId: currentVolleyballGame._id,
+                      eventType: "set_complete",
+                      periodInfo: {
+                        period_number: volleyballState.currentSet,
+                        time_remaining: undefined,
+                        is_overtime: false
+                      },
+                      scoreInfo: {
+                        home_score: volleyballState.setScores.home,
+                        away_score: volleyballState.setScores.away,
+                        details: {
+                          sets_won_home: volleyballState.setsWon.home,
+                          sets_won_away: volleyballState.setsWon.away,
+                          current_set_score: volleyballState.setScores
+                        }
+                      },
+                      description: `Set ${volleyballState.currentSet} - ${volleyballState.setScores.away}-${volleyballState.setScores.home}`
+                    })
+                    
+                    // Move to next set
+                    setVolleyballState(prev => ({
+                      currentSet: prev.currentSet + 1,
+                      setScores: { home: 0, away: 0 },
+                      setsWon: prev.setsWon
+                    }))
+                  } catch (error) {
+                    console.error("Failed to complete set:", error)
+                  }
+                }}
+              >
+                Complete Set {volleyballState.currentSet}
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => setVolleyballState(prev => ({
+                  ...prev,
+                  currentSet: Math.max(1, prev.currentSet - 1),
+                  setScores: { home: 0, away: 0 }
+                }))}
+              >
+                Previous Set
+              </Button>
+              
+              <Button 
+                variant="outline"
+                onClick={() => setVolleyballState(prev => ({
+                  ...prev,
+                  currentSet: prev.currentSet + 1,
+                  setScores: { home: 0, away: 0 }
+                }))}
+              >
+                Next Set
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setVolleyballModalOpen(false)}>
+              Close
             </Button>
           </DialogFooter>
         </DialogContent>

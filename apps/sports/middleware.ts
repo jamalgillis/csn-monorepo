@@ -11,6 +11,9 @@ export default clerkMiddleware(async (auth, req) => {
     '/podcasts',
   ]
   
+  // Define admin routes that require extra protection
+  const adminRoutes = ['/admin']
+  
   // Check if it's a sign-in/sign-up page
   if (pathname.startsWith('/sign-in') || pathname.startsWith('/sign-up')) {
     return
@@ -23,6 +26,12 @@ export default clerkMiddleware(async (auth, req) => {
   
   // Check if it's exactly a public route (not a sub-route)
   if (publicRoutes.includes(pathname)) {
+    return
+  }
+  
+  // Admin routes require authentication (organization check handled in layout)
+  if (adminRoutes.some(route => pathname.startsWith(route))) {
+    await auth.protect()
     return
   }
   
