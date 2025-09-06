@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
-import { useQuery } from "convex/react"
+import { useQuery, useMutation } from "convex/react"
+import { useUser } from "@clerk/nextjs"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 import { Header } from "@/components/navigation/header"
@@ -43,9 +44,23 @@ export default function ShowDetailPage() {
   const params = useParams()
   const router = useRouter()
   const showId = params.showId as Id<"content">
+  const { user } = useUser()
   
   // Fetch show details from database
   const showData = useQuery(api.sports.getShowDetails, { showId })
+  
+  // Get current user from database
+  const currentUser = useQuery(api.users.getUserByClerkId, 
+    user ? { clerkId: user.id } : "skip"
+  )
+
+  // Rating queries and mutations  
+  const userRating = useQuery(api.content.getUserRating, 
+    currentUser ? { contentId: showId, userId: currentUser._id } : "skip"
+  )
+  const ratingSummary = useQuery(api.content.getContentRatings, { contentId: showId })
+  const rateContentMutation = useMutation(api.content.rateContent)
+  const removeRatingMutation = useMutation(api.content.removeRating)
   
   const [isPlaying, setIsPlaying] = useState(true)
   const [activeTab, setActiveTab] = useState("episodes")
@@ -312,6 +327,33 @@ export default function ShowDetailPage() {
     )
   }
 
+  const handleLikeToggle = async () => {
+    if (!user || !currentUser) {
+      // Redirect to sign in if not authenticated or user not in database
+      router.push('/sign-in')
+      return
+    }
+
+    try {
+      if (userRating?.rating === "up") {
+        // User already liked it, so remove the rating (unlike)
+        await removeRatingMutation({ 
+          contentId: showId,
+          userId: currentUser._id
+        })
+      } else {
+        // User hasn't liked it or previously disliked it, so like it
+        await rateContentMutation({ 
+          contentId: showId, 
+          userId: currentUser._id,
+          rating: "up" as const 
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling like:", error)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -487,10 +529,24 @@ export default function ShowDetailPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <Button
                     variant="secondary"
-                    className="flex items-center justify-center hover:scale-105 transition-transform"
+                    onClick={handleLikeToggle}
+                    className={`flex items-center justify-center hover:scale-105 transition-all duration-300 ${
+                      userRating?.rating === "up"
+                        ? "bg-red-500 hover:bg-red-600 text-white"
+                        : "hover:bg-red-50 hover:text-red-500"
+                    }`}
                   >
-                    <Heart className="w-4 h-4 mr-1" />
-                    Like
+                    <Heart 
+                      className={`w-4 h-4 mr-1 transition-all duration-300 ${
+                        userRating?.rating === "up" ? "fill-current" : ""
+                      }`} 
+                    />
+                    {userRating?.rating === "up" ? "Liked" : "Like"}
+                    {ratingSummary && ratingSummary.upRatings > 0 && (
+                      <span className="ml-1 text-xs">
+                        ({ratingSummary.upRatings})
+                      </span>
+                    )}
                   </Button>
                   <Button
                     variant="secondary"
@@ -529,7 +585,7 @@ export default function ShowDetailPage() {
         </section>
 
         {/* Live Show Chat Section */}
-        <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.35s" }}>
+        <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.35s" }}>
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="bg-gradient-to-r from-red-600/20 to-blue-600/20 border-b border-border p-4">
               <div className="flex items-center justify-between">
@@ -670,7 +726,7 @@ export default function ShowDetailPage() {
         </section>
 
         {/* Content Tabs */}
-        <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.4s" }}>
+        <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.4s" }}>
           <div className="border-b border-border">
             <nav className="flex space-x-8">
               {[
@@ -700,7 +756,7 @@ export default function ShowDetailPage() {
         {activeTab === "episodes" && (
           <div>
             {/* Latest Episodes */}
-            <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.5s" }}>
+            <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.5s" }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center">
                   <Clock className="w-5 h-5 mr-3 text-red-400" />
@@ -769,7 +825,7 @@ export default function ShowDetailPage() {
             </section>
 
             {/* Popular Segments */}
-            <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.6s" }}>
+            <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.6s" }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center">
                   <TrendingUp className="w-5 h-5 mr-3 text-yellow-400" />
@@ -813,7 +869,7 @@ export default function ShowDetailPage() {
             </section>
 
             {/* Show Hosts */}
-            <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.7s" }}>
+            <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.7s" }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center">
                   <Users className="w-5 h-5 mr-3 text-purple-400" />
@@ -856,7 +912,7 @@ export default function ShowDetailPage() {
             </section>
 
             {/* Social Discussion */}
-            <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.8s" }}>
+            <section className="mb-8 animate-fade-in hidden" style={{ animationDelay: "0.8s" }}>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold flex items-center">
                   <MessageSquare className="w-5 h-5 mr-3 text-blue-400" />

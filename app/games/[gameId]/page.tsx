@@ -57,10 +57,16 @@ export default function GamePage({ params }: GamePageProps) {
     })
   }, [params])
 
-  // Check if this ID might be from the content table
+  // Get game data from the games table
+  const gameData = useQuery(
+    api.sports.getGameById,
+    gameId ? { gameId: gameId as Id<"games"> } : "skip"
+  )
+
+  // If the game doesn't exist, we could check if it's a content ID
   const contentCheck = useQuery(
     api.content.getContentById,
-    gameId ? { id: gameId as Id<"content"> } : "skip"
+    gameId && !gameData ? { id: gameId as Id<"content"> } : "skip"
   )
 
   // If we found content with this ID, redirect to shows page
@@ -71,16 +77,10 @@ export default function GamePage({ params }: GamePageProps) {
     }
   }, [contentCheck, gameId, router])
 
-  // Fetch game data from Convex only if we haven't found content
-  const gameData = useQuery(
-    api.sports.getGameById,
-    (gameId && !contentCheck) ? { gameId: gameId as Id<"games"> } : "skip"
-  )
-
   // Fetch other games for sidebar
   const otherGames = useQuery(
     api.sports.getOtherGames,
-    (gameId && !contentCheck) ? { currentGameId: gameId as Id<"games"> } : "skip"
+    (gameId && gameData) ? { currentGameId: gameId as Id<"games"> } : "skip"
   )
 
   const [events, setEvents] = useState<GameEvent[]>([

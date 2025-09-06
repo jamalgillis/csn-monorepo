@@ -1190,3 +1190,66 @@ function getTimeAgo(timestamp: string): string {
   return past.toLocaleDateString();
 }
 
+// Fix all volleyball game times according to the official schedule  
+export const fixAllVolleyballTimes = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const games = await ctx.db.query("games").collect();
+    const updates = [];
+    
+    // Schedule with correct times - fixing UTC conversion issue
+    const correctSchedule = [
+      { date: "2025-09-06", opponent: "Vernon College", time: "13:00:00.000Z" }, // 1:00 PM CDT 
+      { date: "2025-09-10", opponent: "Temple College", time: "18:00:00.000Z" }, // 6:00 PM CDT 
+      { date: "2025-09-13", opponent: "Cisco College", time: "13:00:00.000Z" }, // 1:00 PM CDT   
+      { date: "2025-09-17", opponent: "Collin County Community College", time: "18:00:00.000Z" }, // 6:00 PM CDT 
+      { date: "2025-09-20", opponent: "North Central Texas College", time: "13:00:00.000Z" }, // 1:00 PM CDT 
+      { date: "2025-09-24", opponent: "Ranger College", time: "18:00:00.000Z" }, // 6:00 PM CDT 
+      { date: "2025-09-27", opponent: "Hill College", time: "13:00:00.000Z" }, // 1:00 PM CDT 
+      { date: "2025-09-29", opponent: "Navarro College", time: "19:00:00.000Z" }, // 7:00 PM CDT on Sept 29
+    ];
+    
+    for (const scheduleItem of correctSchedule) {
+      for (const game of games) {
+        // For Navarro College, check both Sept 29 and Sept 30 dates since it may be stored as either
+        const dateMatches = game.game_date.includes(scheduleItem.date) || 
+          (scheduleItem.opponent.includes("Navarro") && (game.game_date.includes("2025-09-29") || game.game_date.includes("2025-09-30")));
+          
+        if (dateMatches) {
+          const homeTeam = await ctx.db.get(game.home_team_id);
+          const awayTeam = await ctx.db.get(game.away_team_id);
+          
+          const opponentMatches = 
+            homeTeam?.name.includes(scheduleItem.opponent.split(" ")[0]) || 
+            awayTeam?.name.includes(scheduleItem.opponent.split(" ")[0]) ||
+            (scheduleItem.opponent.includes("Collin County") && 
+             (homeTeam?.name.includes("Collin County") || awayTeam?.name.includes("Collin County"))) ||
+            (scheduleItem.opponent.includes("North Central Texas") && 
+             (homeTeam?.name.includes("North Central Texas") || awayTeam?.name.includes("North Central Texas")));
+          
+          if (opponentMatches) {
+            const newGameDate = `${scheduleItem.date}T${scheduleItem.time}`;
+            
+            await ctx.db.patch(game._id, {
+              game_date: newGameDate
+            });
+            
+            updates.push({
+              opponent: scheduleItem.opponent,
+              gameId: game._id,
+              oldTime: game.game_date,
+              newTime: newGameDate
+            });
+            break;
+          }
+        }
+      }
+    }
+    
+    return {
+      message: `Successfully updated ${updates.length} volleyball game times`,
+      updates
+    };
+  },
+});
+

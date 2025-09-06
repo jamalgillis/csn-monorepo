@@ -496,6 +496,169 @@ export const removeRating = mutation({
   },
 });
 
+// Helper function to get or create user (same as in watchlist.ts)
+async function getOrCreateUser(ctx: any, clerkId: string) {
+  let user = await ctx.db
+    .query("users")
+    .withIndex("by_clerk_id", (q: any) => q.eq("clerk_id", clerkId))
+    .first();
+
+  if (!user) {
+    // Create user if doesn't exist
+    const identity = await ctx.auth.getUserIdentity();
+    const userId = await ctx.db.insert("users", {
+      clerk_id: clerkId,
+      email: identity?.email || "",
+      name: identity?.name || null,
+      avatar_url: identity?.pictureUrl || null,
+      subscription_status: "free",
+    });
+    
+    // Return the inserted user
+    return await ctx.db.get(userId);
+  }
+
+  return user;
+}
+
+// Auth-aware rating functions (using Clerk authentication)
+
+// Get current user's rating for content (auth-aware)
+export const getUserContentRating = query({
+  args: { contentId: v.id("content") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      return null; // User not authenticated
+    }
+
+    // Get or create user
+    const user = await getOrCreateUser(ctx, identity.subject);
+    if (!user) {
+      return null; // User not found in database
+    }
+
+    const rating = await ctx.db
+      .query("content_ratings")
+      .withIndex("by_user_content", (q) => 
+        q.eq("user_id", user._id).eq("content_id", args.contentId)
+      )
+      .first();
+    
+    return rating;
+  },
+});
+
+// Get content ratings summary (same as getContentRatings but with different name for consistency)
+export const getContentRatingsSummary = query({
+  args: { contentId: v.id("content") },
+  handler: async (ctx, args) => {
+    const ratings = await ctx.db
+      .query("content_ratings")
+      .withIndex("by_content", (q) => q.eq("content_id", args.contentId))
+      .collect();
+    
+    const upRatings = ratings.filter(r => r.rating === "up").length;
+    const downRatings = ratings.filter(r => r.rating === "down").length;
+    const totalRatings = ratings.length;
+    
+    const thumbsUpPercentage = totalRatings > 0 ? Math.round((upRatings / totalRatings) * 100) : 0;
+    
+    return {
+      thumbsUpPercentage,
+      totalRatings,
+      upRatings,
+      downRatings,
+    };
+  },
+});
+
+// Rate content (auth-aware)
+export const rateContentAuth = mutation({
+  args: {
+    contentId: v.id("content"),
+    rating: v.union(v.literal("up"), v.literal("down")),
+  },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Authentication required");
+    }
+
+    // Get or create user
+    const user = await getOrCreateUser(ctx, identity.subject);
+    if (!user) {
+      throw new Error("Unable to create user");
+    }
+
+    // Check if content exists
+    const content = await ctx.db.get(args.contentId);
+    if (!content) {
+      throw new Error("Content not found");
+    }
+    
+    // Check if user has already rated this content
+    const existingRating = await ctx.db
+      .query("content_ratings")
+      .withIndex("by_user_content", (q) => 
+        q.eq("user_id", user._id).eq("content_id", args.contentId)
+      )
+      .first();
+    
+    const now = new Date().toISOString();
+    
+    if (existingRating) {
+      // Update existing rating
+      await ctx.db.patch(existingRating._id, {
+        rating: args.rating,
+        updated_at: now,
+      });
+      return { updated: true, rating: args.rating };
+    } else {
+      // Create new rating
+      const ratingId = await ctx.db.insert("content_ratings", {
+        user_id: user._id,
+        content_id: args.contentId,
+        rating: args.rating,
+        created_at: now,
+        updated_at: now,
+      });
+      return { created: true, rating: args.rating, id: ratingId };
+    }
+  },
+});
+
+// Remove user's rating for content (auth-aware)
+export const removeContentRating = mutation({
+  args: { contentId: v.id("content") },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) {
+      throw new Error("Authentication required");
+    }
+
+    // Get or create user
+    const user = await getOrCreateUser(ctx, identity.subject);
+    if (!user) {
+      throw new Error("Unable to create user");
+    }
+
+    const existingRating = await ctx.db
+      .query("content_ratings")
+      .withIndex("by_user_content", (q) => 
+        q.eq("user_id", user._id).eq("content_id", args.contentId)
+      )
+      .first();
+    
+    if (existingRating) {
+      await ctx.db.delete(existingRating._id);
+      return { removed: true };
+    }
+    
+    return { removed: false, message: "No rating found to remove" };
+  },
+});
+
 // Update content fields
 export const updateContent = mutation({
   args: {
