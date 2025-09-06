@@ -1,5 +1,7 @@
+'use client'
+
 import type React from "react"
-import type { Metadata } from "next"
+import { useEffect } from "react"
 import { Inter, JetBrains_Mono, Merriweather } from "next/font/google"
 import "./globals.css"
 import { ConvexClientProvider } from "./providers/ConvexClientProvider"
@@ -24,17 +26,25 @@ const merriweather = Merriweather({
   weight: ["300", "400", "700"],
 })
 
-export const metadata: Metadata = {
-  title: "CSN Sports - Live Sports, Shows & News",
-  description: "Your ultimate destination for live sports streaming, shows, and breaking news",
-  generator: "v0.app",
-}
 
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  useEffect(() => {
+    document.title = "CSN Sports - Live Sports, Shows & News"
+    const meta = document.querySelector('meta[name="description"]')
+    if (meta) {
+      meta.setAttribute('content', 'Your ultimate destination for live sports streaming, shows, and breaking news')
+    } else {
+      const newMeta = document.createElement('meta')
+      newMeta.name = 'description'
+      newMeta.content = 'Your ultimate destination for live sports streaming, shows, and breaking news'
+      document.head.appendChild(newMeta)
+    }
+  }, [])
+
   return (
     <ClerkProvider>
       <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable} ${merriweather.variable} dark`}>
