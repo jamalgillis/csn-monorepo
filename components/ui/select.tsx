@@ -6,24 +6,35 @@ import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
-const Select = React.forwardRef<any, any>(({ ...props }, ref) => (
-  <SelectPrimitive.Root data-slot="select" {...props} />
+const Select = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Root>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Root>
+>(({ ...props }, ref) => (
+  <SelectPrimitive.Root ref={ref} data-slot="select" {...props} />
 ))
 Select.displayName = SelectPrimitive.Root.displayName
 
-const SelectGroup = React.forwardRef<any, any>(({ ...props }, ref) => (
-  <SelectPrimitive.Group data-slot="select-group" {...props} />
+const SelectGroup = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Group>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Group>
+>(({ ...props }, ref) => (
+  <SelectPrimitive.Group ref={ref} data-slot="select-group" {...props} />
 ))
 SelectGroup.displayName = SelectPrimitive.Group.displayName
 
-const SelectValue = React.forwardRef<any, any>(({ ...props }, ref) => (
-  <SelectPrimitive.Value data-slot="select-value" {...props} />
+const SelectValue = React.forwardRef<
+  React.ElementRef<typeof SelectPrimitive.Value>,
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Value>
+>(({ ...props }, ref) => (
+  <SelectPrimitive.Value ref={ref} data-slot="select-value" {...props} />
 ))
 SelectValue.displayName = SelectPrimitive.Value.displayName
 
 const SelectTrigger = React.forwardRef<
   React.ElementRef<typeof SelectPrimitive.Trigger>,
-  any
+  React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger> & {
+    size?: "sm" | "default"
+  }
 >(({ className, size = "default", children, ...props }, ref) => {
   return (
     <SelectPrimitive.Trigger
@@ -50,7 +61,7 @@ function SelectContent({
   children,
   position = "popper",
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.Content>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -83,7 +94,7 @@ function SelectContent({
 function SelectLabel({
   className,
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.Label>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>) {
   return (
     <SelectPrimitive.Label
       data-slot="select-label"
@@ -97,7 +108,7 @@ function SelectItem({
   className,
   children,
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.Item>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
@@ -120,7 +131,7 @@ function SelectItem({
 function SelectSeparator({
   className,
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.Separator>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>) {
   return (
     <SelectPrimitive.Separator
       data-slot="select-separator"
@@ -133,7 +144,7 @@ function SelectSeparator({
 function SelectScrollUpButton({
   className,
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.ScrollUpButton>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollUpButton>) {
   return (
     <SelectPrimitive.ScrollUpButton
       data-slot="select-scroll-up-button"
@@ -151,7 +162,7 @@ function SelectScrollUpButton({
 function SelectScrollDownButton({
   className,
   ...props
-}: any & { ref?: any } & React.ComponentProps<typeof SelectPrimitive.ScrollDownButton>) {
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.ScrollDownButton>) {
   return (
     <SelectPrimitive.ScrollDownButton
       data-slot="select-scroll-down-button"
