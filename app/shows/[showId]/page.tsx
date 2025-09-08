@@ -420,6 +420,7 @@ export default function ShowDetailPage() {
             </div>
 
             {/* Video Content */}
+            {console.log('Show video_url:', show.video_url, 'Boolean check:', !!show.video_url)}
             {show.video_url ? (
               <iframe
                 src={show.video_url}
@@ -427,7 +428,9 @@ export default function ShowDetailPage() {
                 className="w-full h-full"
                 frameBorder="0"
                 allowFullScreen
-                allow="autoplay; fullscreen; picture-in-picture"
+                allow="autoplay; fullscreen; picture-in-picture; encrypted-media; gyroscope; accelerometer"
+                sandbox="allow-scripts allow-same-origin allow-presentation allow-top-navigation-by-user-activation"
+                referrerPolicy="no-referrer-when-downgrade"
               />
             ) : (
               <img 
