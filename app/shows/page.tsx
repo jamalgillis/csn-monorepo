@@ -28,7 +28,9 @@ export default function ShowsCatalogPage() {
   // Extract categories dynamically from the data
   const categories = useMemo(() => {
     if (!showsData) return ["All"]
-    const uniqueCategories = ["All", ...new Set(showsData.map(show => show.category))]
+    // Get unique categories from tag_names
+    const allTags = showsData.flatMap(show => show.tag_names || [])
+    const uniqueCategories = ["All", ...new Set(allTags)]
     return uniqueCategories
   }, [showsData])
 
@@ -39,18 +41,22 @@ export default function ShowsCatalogPage() {
       const matchesSearch =
         show.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         show.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        show.tags.some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      const matchesCategory = selectedCategory === "All" || show.category === selectedCategory
-      const matchesLive = !showLiveOnly || show.status === "live"
+        (show.tag_names || []).some((tag) => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      const matchesCategory = selectedCategory === "All" || (show.tag_names || []).includes(selectedCategory)
+      // Determine if show is "live" - shows with video_url are considered "live"
+      const isLive = !!(show.video_url && show.video_url.length > 0)
+      const matchesLive = !showLiveOnly || isLive
       return matchesSearch && matchesCategory && matchesLive
     })
 
     filtered.sort((a, b) => {
       switch (sortBy) {
         case "Popular":
-          return Number.parseFloat(b.viewers.replace(/[KM]/g, "")) - Number.parseFloat(a.viewers.replace(/[KM]/g, ""))
+          // Sort by IMDB rating as proxy for popularity
+          return (b.imdb_rating || 0) - (a.imdb_rating || 0)
         case "Newest":
-          return b.episodes - a.episodes
+          // Sort by year and creation time
+          return (b.year || 0) - (a.year || 0) || b._creationTime - a._creationTime
         case "A-Z":
           return a.title.localeCompare(b.title)
         default:
@@ -61,14 +67,17 @@ export default function ShowsCatalogPage() {
     return filtered
   }, [showsData, searchQuery, selectedCategory, sortBy, showLiveOnly])
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "live":
-        return <Badge className="bg-red-600 text-white animate-pulse">LIVE</Badge>
-      case "new":
-        return <Badge className="bg-blue-600 text-white">NEW</Badge>
-      default:
-        return <Badge variant="secondary">AVAILABLE</Badge>
+  const getStatusBadge = (show: any) => {
+    // Show is "live" if it has a video_url
+    const isLive = !!(show.video_url && show.video_url.length > 0)
+    const isNew = show.new_release
+    
+    if (isLive) {
+      return <Badge className="bg-red-600 text-white animate-pulse">LIVE</Badge>
+    } else if (isNew) {
+      return <Badge className="bg-blue-600 text-white">NEW</Badge>
+    } else {
+      return <Badge variant="secondary">AVAILABLE</Badge>
     }
   }
 
@@ -173,17 +182,17 @@ export default function ShowsCatalogPage() {
         {viewMode === "grid" ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredAndSortedShows.map((show) => (
-              <Link key={show.id} href={`/shows/${show.id}`}>
+              <Link key={show._id} href={`/shows/${show._id}`}>
                 <Card className="group cursor-pointer hover:scale-105 transition-all duration-300 overflow-hidden bg-card border-border">
                   <div className="relative aspect-video">
-                    <Image src={show.thumbnail || "/placeholder.svg"} alt={show.title} fill className="object-cover" />
+                    <Image src={show.poster_url || show.backdrop_url || "/placeholder.svg"} alt={show.title} fill className="object-cover" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
                       <Play className="w-12 h-12 text-white" />
                     </div>
-                    <div className="absolute top-2 left-2">{getStatusBadge(show.status)}</div>
+                    <div className="absolute top-2 left-2">{getStatusBadge(show)}</div>
                     <div className="absolute top-2 right-2">
                       <Badge variant="secondary" className="bg-black/60 text-white">
-                        {show.duration}
+                        {show.runtime}m
                       </Badge>
                     </div>
                   </div>
@@ -193,9 +202,9 @@ export default function ShowsCatalogPage() {
                       <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors line-clamp-1">
                         {show.title}
                       </h3>
-                      <div className="flex items-center gap-1 text-yellow-500 hidden">
+                      <div className="flex items-center gap-1 text-yellow-500">
                         <Star className="w-3 h-3 fill-current" />
-                        <span className="text-xs">{show.rating}</span>
+                        <span className="text-xs">{show.imdb_rating}</span>
                       </div>
                     </div>
 
@@ -204,23 +213,23 @@ export default function ShowsCatalogPage() {
                     <div className="flex items-center justify-between text-xs text-muted-foreground mb-3">
                       <div className="flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        <span>{show.episodes} episodes</span>
+                        <span>{show.year}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Users className="w-3 h-3" />
-                        <span>{show.viewers}</span>
+                        <span>{show.director}</span>
                       </div>
                     </div>
 
                     <div className="flex flex-wrap gap-1">
-                      {show.tags.slice(0, 2).map((tag) => (
+                      {(show.tag_names || []).slice(0, 2).map((tag) => (
                         <Badge key={tag} variant="outline" className="text-xs">
                           {tag}
                         </Badge>
                       ))}
-                      {show.tags.length > 2 && (
+                      {(show.tag_names || []).length > 2 && (
                         <Badge variant="outline" className="text-xs">
-                          +{show.tags.length - 2}
+                          +{(show.tag_names || []).length - 2}
                         </Badge>
                       )}
                     </div>
@@ -232,12 +241,12 @@ export default function ShowsCatalogPage() {
         ) : (
           <div className="space-y-4">
             {filteredAndSortedShows.map((show) => (
-              <Link key={show.id} href={`/shows/${show.id}`}>
+              <Link key={show._id} href={`/shows/${show._id}`}>
                 <Card className="group cursor-pointer hover:bg-accent/50 transition-all duration-300 p-4">
                   <div className="flex gap-4">
                     <div className="relative w-32 h-20 flex-shrink-0">
                       <Image
-                        src={show.thumbnail || "/placeholder.svg"}
+                        src={show.poster_url || show.backdrop_url || "/placeholder.svg"}
                         alt={show.title}
                         fill
                         className="object-cover rounded"
@@ -253,13 +262,13 @@ export default function ShowsCatalogPage() {
                           <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                             {show.title}
                           </h3>
-                          <p className="text-sm text-muted-foreground">{show.category}</p>
+                          <p className="text-sm text-muted-foreground">{(show.tag_names || [])[0] || 'Show'}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                          {getStatusBadge(show.status)}
-                          <div className="flex items-center gap-1 text-yellow-500 hidden">
+                          {getStatusBadge(show)}
+                          <div className="flex items-center gap-1 text-yellow-500">
                             <Star className="w-3 h-3 fill-current" />
-                            <span className="text-xs">{show.rating}</span>
+                            <span className="text-xs">{show.imdb_rating}</span>
                           </div>
                         </div>
                       </div>
@@ -270,15 +279,15 @@ export default function ShowsCatalogPage() {
                         <div className="flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           <span>
-                            {show.duration} • {show.episodes} episodes
+                            {show.runtime}m • {show.year}
                           </span>
                         </div>
                         <div className="flex items-center gap-1">
                           <Users className="w-3 h-3" />
-                          <span>{show.viewers} viewers</span>
+                          <span>{show.director}</span>
                         </div>
                         <div className="flex gap-1">
-                          {show.tags.map((tag) => (
+                          {(show.tag_names || []).map((tag) => (
                             <Badge key={tag} variant="outline" className="text-xs">
                               {tag}
                             </Badge>

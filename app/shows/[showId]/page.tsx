@@ -43,11 +43,16 @@ import { Input } from "@/components/ui/input"
 export default function ShowDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const showId = params.showId as Id<"content">
+  const showId = params.showId as string
   const { user } = useUser()
   
+  // Validate showId
+  const isValidShowId = showId && showId !== 'undefined' && typeof showId === 'string' && showId.length > 0
+  
   // Fetch show details from database
-  const showData = useQuery(api.sports.getShowDetails, { showId })
+  const showData = useQuery(api.sports.getShowDetails, 
+    isValidShowId ? { showId: showId as Id<"content"> } : "skip"
+  )
   
   // Get current user from database
   const currentUser = useQuery(api.users.getUserByClerkId, 
@@ -56,9 +61,11 @@ export default function ShowDetailPage() {
 
   // Rating queries and mutations  
   const userRating = useQuery(api.content.getUserRating, 
-    currentUser ? { contentId: showId, userId: currentUser._id } : "skip"
+    currentUser && isValidShowId ? { contentId: showId as Id<"content">, userId: currentUser._id } : "skip"
   )
-  const ratingSummary = useQuery(api.content.getContentRatings, { contentId: showId })
+  const ratingSummary = useQuery(api.content.getContentRatings, 
+    isValidShowId ? { contentId: showId as Id<"content"> } : "skip"
+  )
   const rateContentMutation = useMutation(api.content.rateContent)
   const removeRatingMutation = useMutation(api.content.removeRating)
   
@@ -112,6 +119,27 @@ export default function ShowDetailPage() {
     }, 8000)
     return () => clearInterval(interval)
   }, [])
+
+  // Invalid showId state
+  if (!isValidShowId) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="text-center py-16">
+            <h1 className="text-2xl font-bold text-muted-foreground mb-4">Invalid Show ID</h1>
+            <p className="text-muted-foreground mb-8">The show ID provided is not valid.</p>
+            <button 
+              onClick={() => router.push('/shows')}
+              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90"
+            >
+              Back to Shows
+            </button>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   // Loading state
   if (showData === undefined) {
@@ -328,7 +356,7 @@ export default function ShowDetailPage() {
   }
 
   const handleLikeToggle = async () => {
-    if (!user || !currentUser) {
+    if (!user || !currentUser || !isValidShowId) {
       // Redirect to sign in if not authenticated or user not in database
       router.push('/sign-in')
       return
@@ -338,13 +366,13 @@ export default function ShowDetailPage() {
       if (userRating?.rating === "up") {
         // User already liked it, so remove the rating (unlike)
         await removeRatingMutation({ 
-          contentId: showId,
+          contentId: showId as Id<"content">,
           userId: currentUser._id
         })
       } else {
         // User hasn't liked it or previously disliked it, so like it
         await rateContentMutation({ 
-          contentId: showId, 
+          contentId: showId as Id<"content">, 
           userId: currentUser._id,
           rating: "up" as const 
         })
@@ -374,7 +402,7 @@ export default function ShowDetailPage() {
         {/* Main Video Player Section */}
         <section className="mb-8 animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <div className="relative aspect-video rounded-lg overflow-hidden bg-gradient-to-br from-gray-800 to-gray-900">
-            <div className="absolute top-4 left-4 z-20 flex items-center space-x-3">
+            <div className={`absolute top-4 left-4 z-20 flex items-center space-x-3 ${show.video_url ? 'hidden' : ''}`}>
               {show.status === 'live' ? (
                 <div className="bg-red-600 text-white px-3 py-1 rounded-full text-sm font-semibold flex items-center animate-pulse">
                   <div className="w-2 h-2 bg-white rounded-full mr-2 animate-pulse"></div>
@@ -392,13 +420,24 @@ export default function ShowDetailPage() {
             </div>
 
             {/* Video Content */}
-            <img 
-              src={show.backdrop_url || show.poster_url || "/placeholder.svg"} 
-              alt={show.title} 
-              className="w-full h-full object-cover" 
-            />
+            {show.video_url ? (
+              <iframe
+                src={show.video_url}
+                title={show.title}
+                className="w-full h-full"
+                frameBorder="0"
+                allowFullScreen
+                allow="autoplay; fullscreen; picture-in-picture"
+              />
+            ) : (
+              <img 
+                src={show.backdrop_url || show.poster_url || "/placeholder.svg"} 
+                alt={show.title} 
+                className="w-full h-full object-cover" 
+              />
+            )}
 
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm p-6">
+            <div className={`absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-sm p-6 ${show.video_url ? 'hidden' : ''}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <Button

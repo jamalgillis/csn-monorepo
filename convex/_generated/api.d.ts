@@ -14,15 +14,13 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as blog from "../blog.js";
-import type * as clearTeamsAndGames from "../clearTeamsAndGames.js";
 import type * as content from "../content.js";
 import type * as debug from "../debug.js";
-import type * as migrations from "../migrations.js";
-import type * as resetAndSeed from "../resetAndSeed.js";
-import type * as seed from "../seed.js";
+import type * as gameHttpActions from "../gameHttpActions.js";
+import type * as http from "../http.js";
 import type * as sports from "../sports.js";
 import type * as users from "../users.js";
-import type * as watchlist from "../watchlist.js";
+import type * as webhooks from "../webhooks.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -34,15 +32,13 @@ import type * as watchlist from "../watchlist.js";
  */
 declare const fullApi: ApiFromModules<{
   blog: typeof blog;
-  clearTeamsAndGames: typeof clearTeamsAndGames;
   content: typeof content;
   debug: typeof debug;
-  migrations: typeof migrations;
-  resetAndSeed: typeof resetAndSeed;
-  seed: typeof seed;
+  gameHttpActions: typeof gameHttpActions;
+  http: typeof http;
   sports: typeof sports;
   users: typeof users;
-  watchlist: typeof watchlist;
+  webhooks: typeof webhooks;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -201,7 +201,7 @@ export function SportsCarousel({
                             height={24}
                           />
                           <span className="font-semibold">
-                            {item.awayTeam?.split(" ")[0]}
+                            {typeof item.awayTeam === 'string' ? item.awayTeam.split(" ")[0] : item.awayTeam}
                           </span>
                           {item.awayScore !== undefined && (
                             <span className="text-lg font-bold text-primary">
@@ -217,7 +217,7 @@ export function SportsCarousel({
                             </span>
                           )}
                           <span className="font-semibold">
-                            {item.homeTeam?.split(" ")[0]}
+                            {typeof item.homeTeam === 'string' ? item.homeTeam.split(" ")[0] : item.homeTeam}
                           </span>
                           <Image
                             src={item.homeTeamLogo || "/placeholder.svg"}

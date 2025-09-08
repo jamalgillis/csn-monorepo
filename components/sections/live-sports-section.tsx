@@ -47,7 +47,7 @@ export function LiveSportsSection() {
 
     return {
       id: game.id,
-      title: `${game.awayTeam} vs ${game.homeTeam}`,
+      title: `${game.awayTeam?.name || game.awayTeam} vs ${game.homeTeam?.name || game.homeTeam}`,
       subtitle,
       image: game.thumbnail,
       badge,
@@ -57,8 +57,8 @@ export function LiveSportsSection() {
       gameTime: game.gameTime,
       sport: game.sport,
       // Enhanced sports-specific fields
-      awayTeam: game.awayTeam,
-      homeTeam: game.homeTeam,
+      awayTeam: game.awayTeam?.name || game.awayTeam,
+      homeTeam: game.homeTeam?.name || game.homeTeam,
       awayScore: (game.isLive || game.isFinal) ? game.awayScore : undefined,
       homeScore: (game.isLive || game.isFinal) ? game.homeScore : undefined,
       awayTeamLogo: "/placeholder.svg", // Placeholder for now
