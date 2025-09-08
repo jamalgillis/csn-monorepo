@@ -19,6 +19,15 @@ const nextConfig = {
   async headers() {
     return [
       {
+        source: '/shows/(.*)',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-src 'self' https: *.themediacdn.com;",
+          },
+        ],
+      },
+      {
         source: '/(.*)',
         headers: [
           {
