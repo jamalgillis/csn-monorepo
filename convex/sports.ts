@@ -249,6 +249,66 @@ export const getLiveGames = query({
     return gamesWithDetails;
   }
 });
+// Get all scheduled games and live games for carousel display
+export const getAllScheduledAndLiveGames = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get live games and all scheduled games (not just today's)
+    const games = await ctx.db
+      .query("games")
+      .filter((q) => 
+        q.or(
+          // Live games (any date)
+          q.eq(q.field("status"), "in_progress"),
+          // All scheduled games (any date in future)
+          q.eq(q.field("status"), "scheduled")
+        )
+      )
+      .order("asc") // Show upcoming games first
+      .collect();
+
+    const gamesWithDetails = await Promise.all(
+      games.map(async (game) => {
+        const homeTeam = await ctx.db.get(game.home_team_id);
+        const awayTeam = await ctx.db.get(game.away_team_id);
+        const sport = await ctx.db.get(game.sport_id);
+
+        // Get game state for live games
+        let gameState = null;
+        if (game.status === "in_progress") {
+          gameState = await ctx.db
+            .query("game_states")
+            .withIndex("by_game", (q) => q.eq("game_id", game._id))
+            .first();
+        }
+
+        return {
+          id: game._id,
+          homeTeam: {
+            name: homeTeam?.name || "Unknown",
+            abbreviation: homeTeam?.name?.substring(0, 3).toUpperCase() || "UNK"
+          },
+          awayTeam: {
+            name: awayTeam?.name || "Unknown",
+            abbreviation: awayTeam?.name?.substring(0, 3).toUpperCase() || "UNK"
+          },
+          sport: sport?.name || "Unknown",
+          status: game.status,
+          homeScore: game.home_score || 0,
+          awayScore: game.away_score || 0,
+          game_date: game.game_date,
+          venue: game.venue,
+          gameState: gameState ? {
+            quarter: gameState.period_display,
+            timeLeft: gameState.time_left || "0:00"
+          } : null
+        };
+      })
+    );
+
+    return gamesWithDetails;
+  }
+});
 
 // Get sports shows from content
 export const getSportsShows = query({

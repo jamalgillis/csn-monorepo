@@ -6,7 +6,7 @@ import { useQuery } from "convex/react"
 import { api } from "../../convex/_generated/api"
 
 export function LiveSportsSection() {
-  const todaysGames = useQuery(api.sports.getLiveGames)
+  const todaysGames = useQuery(api.sports.getAllScheduledAndLiveGames)
 
   if (!todaysGames) {
     return (
@@ -30,50 +30,58 @@ export function LiveSportsSection() {
     // Determine badge based on game status
     let badge;
     let subtitle;
+    const gameDate = new Date(game.game_date);
+    const gameTime = gameDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
     
-    if (game.isLive) {
+    if (game.status === "in_progress") {
       badge = { text: "LIVE", variant: "live" as const };
-      subtitle = `${game.quarter} Quarter - ${game.timeLeft} left`;
-    } else if (game.isScheduled) {
+      subtitle = game.gameState ? `${game.gameState.quarter} - ${game.gameState.timeLeft}` : "Live";
+    } else if (game.status === "scheduled") {
       badge = { text: "SCHEDULED", variant: "scheduled" as const };
-      subtitle = `${game.gameTime} at ${game.venue}`;
-    } else if (game.isFinal) {
+      subtitle = `${gameTime} at ${game.venue}`;
+    } else if (game.status === "final") {
       badge = { text: "FINAL", variant: "final" as const };
       subtitle = `Final Score - ${game.sport}`;
     } else {
       badge = { text: "UPCOMING", variant: "scheduled" as const };
-      subtitle = `${game.gameTime} - ${game.sport}`;
+      subtitle = `${gameTime} - ${game.sport}`;
     }
 
     return {
       id: game.id,
       title: `${game.awayTeam?.name || game.awayTeam} vs ${game.homeTeam?.name || game.homeTeam}`,
       subtitle,
-      image: game.thumbnail,
+      image: "/placeholder-game.jpg", // Placeholder for now
       badge,
-      viewers: game.isLive ? `${(game.viewers / 1000).toFixed(1)}K viewers` : undefined,
-      score: (game.isLive || game.isFinal) ? `${game.awayScore} - ${game.homeScore}` : undefined,
+      viewers: game.status === "in_progress" ? "Live" : undefined,
+      score: (game.status === "in_progress" || game.status === "final") ? `${game.awayScore} - ${game.homeScore}` : undefined,
       venue: game.venue,
-      gameTime: game.gameTime,
+      gameTime: gameTime,
       sport: game.sport,
       // Enhanced sports-specific fields
       awayTeam: game.awayTeam?.name || game.awayTeam,
       homeTeam: game.homeTeam?.name || game.homeTeam,
-      awayScore: (game.isLive || game.isFinal) ? game.awayScore : undefined,
-      homeScore: (game.isLive || game.isFinal) ? game.homeScore : undefined,
+      awayScore: (game.status === "in_progress" || game.status === "final") ? game.awayScore : undefined,
+      homeScore: (game.status === "in_progress" || game.status === "final") ? game.homeScore : undefined,
       awayTeamLogo: "/placeholder.svg", // Placeholder for now
       homeTeamLogo: "/placeholder.svg", // Placeholder for now
-      date: game.gameDate,
-      time: game.gameTime,
-      league: "Community College", // Default league
-      network: undefined, // Not available yet
+      date: game.game_date,
+      time: gameTime,
+      league: "NJCAA", // Default league for community college
+      network: "CSN", // Centex Sports Network
       status: game.status,
     };
   });
 
   // Determine title based on what games we have
-  const hasLiveGames = todaysGames.some((game: any) => game.isLive);
-  const title = hasLiveGames ? "Live Sports" : "Today's Games";
+  const hasLiveGames = todaysGames.some((game: any) => game.status === "in_progress");
+  const title = hasLiveGames ? "Live & Scheduled Games" : "Scheduled Games";
   
   return (
     <StaggerAnimation delay={100}>
@@ -81,6 +89,7 @@ export function LiveSportsSection() {
         title={title}
         items={transformedGames}
         icon={<div className="w-3 h-3 bg-green-500 rounded-full mr-3 animate-pulse" />}
+        routePrefix="/games" // Ensure games route to /games/[gameId]
       />
     </StaggerAnimation>
   )
