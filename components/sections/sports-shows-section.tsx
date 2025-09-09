@@ -28,17 +28,17 @@ export function SportsShowsSection() {
   }
 
   const transformedItems = showsAndPodcasts.map((item: any) => ({
-    id: item.id,
+    id: item._id, // Use _id from Convex instead of id
     title: item.title,
     subtitle: item.description,
-    image: item.thumbnail,
+    image: item.poster_url || item.backdrop_url, // Use actual field names from database
     badge: {
       text: item.badge,
       variant: item.type === "podcast" ? ("podcast" as const) : 
                item.isLive ? ("live" as const) : ("available" as const),
     },
-    duration: item.duration,
-    category: item.category,
+    duration: item.runtime ? `${item.runtime} min` : item.duration,
+    category: item.tag_names?.join(", ") || item.category,
     type: item.type,
   }))
 
