@@ -48,6 +48,7 @@ export function SportsShowsSection() {
         title="Sports Shows & Talk"
         items={transformedItems}
         icon={<Tv className="w-6 h-6 mr-3 text-blue-400" />}
+        routePrefix="/shows"
       />
     </StaggerAnimation>
   )

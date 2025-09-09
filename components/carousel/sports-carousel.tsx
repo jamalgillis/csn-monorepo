@@ -51,6 +51,8 @@ interface SportsCarouselProps {
   icon?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
+  routePrefix?: string; // e.g., "/games" or "/shows"
+  onItemClick?: (id: string) => void; // Custom click handler
 }
 
 export function SportsCarousel({
@@ -59,6 +61,8 @@ export function SportsCarousel({
   icon,
   className,
   style,
+  routePrefix = "/games", // Default to games for backward compatibility
+  onItemClick,
 }: SportsCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
@@ -114,8 +118,12 @@ export function SportsCarousel({
     }
   };
 
-  const handleItemClick = (gameId: string) => {
-    router.push(`/games/${gameId}`);
+  const handleItemClick = (itemId: string) => {
+    if (onItemClick) {
+      onItemClick(itemId);
+    } else {
+      router.push(`${routePrefix}/${itemId}`);
+    }
   };
 
   return (
