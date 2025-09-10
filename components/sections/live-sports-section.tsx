@@ -60,7 +60,7 @@ export function LiveSportsSection() {
 
     // Sport-specific default images
     if (game.sport === "Volleyball") {
-      gameImage = "/basketball-game-winner.png"; // Generic sports action image
+      gameImage = "https://q1u9idchx6.ufs.sh/f/kC4KSKx35wVMgziek7bMlracmiLwXPZh9yoNEFVv28qtJn1z";
     } else if (game.sport === "Basketball") {
       gameImage = "/basketball-player-shooting.png";
     } else {
@@ -71,8 +71,8 @@ export function LiveSportsSection() {
     const homeTeamName = game.homeTeam?.name || "";
     const awayTeamName = game.awayTeam?.name || "";
     
-    // For McLennan Community College games, use college sports themed image
-    if (homeTeamName.includes("McLennan") || awayTeamName.includes("McLennan")) {
+    // For McLennan Community College games, use college sports themed image (unless it's volleyball)
+    if ((homeTeamName.includes("McLennan") || awayTeamName.includes("McLennan")) && game.sport !== "Volleyball") {
       gameImage = "/college-basketball-prospects.png";
     }
 
