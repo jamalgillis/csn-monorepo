@@ -53,11 +53,34 @@ export function LiveSportsSection() {
       subtitle = `${gameTime} - ${game.sport}`;
     }
 
+    // Determine image based on sport and teams
+    let gameImage = "/placeholder.svg"; // Default fallback
+    let homeTeamLogo = "/placeholder.svg";
+    let awayTeamLogo = "/placeholder.svg";
+
+    // Sport-specific default images
+    if (game.sport === "Volleyball") {
+      gameImage = "/basketball-game-winner.png"; // Generic sports action image
+    } else if (game.sport === "Basketball") {
+      gameImage = "/basketball-player-shooting.png";
+    } else {
+      gameImage = "/generic-sports-broadcast.png";
+    }
+
+    // Team-specific logos and images
+    const homeTeamName = game.homeTeam?.name || "";
+    const awayTeamName = game.awayTeam?.name || "";
+    
+    // For McLennan Community College games, use college sports themed image
+    if (homeTeamName.includes("McLennan") || awayTeamName.includes("McLennan")) {
+      gameImage = "/college-basketball-prospects.png";
+    }
+
     return {
       id: game.id,
       title: `${game.awayTeam?.name || game.awayTeam} vs ${game.homeTeam?.name || game.homeTeam}`,
       subtitle,
-      image: "/placeholder-game.jpg", // Placeholder for now
+      image: gameImage,
       badge,
       viewers: game.status === "in_progress" ? "Live" : undefined,
       score: (game.status === "in_progress" || game.status === "final") ? `${game.awayScore} - ${game.homeScore}` : undefined,
@@ -69,8 +92,8 @@ export function LiveSportsSection() {
       homeTeam: game.homeTeam?.name || game.homeTeam,
       awayScore: (game.status === "in_progress" || game.status === "final") ? game.awayScore : undefined,
       homeScore: (game.status === "in_progress" || game.status === "final") ? game.homeScore : undefined,
-      awayTeamLogo: "/placeholder.svg", // Placeholder for now
-      homeTeamLogo: "/placeholder.svg", // Placeholder for now
+      awayTeamLogo: awayTeamLogo,
+      homeTeamLogo: homeTeamLogo,
       date: game.game_date,
       time: gameTime,
       league: "NJCAA", // Default league for community college
