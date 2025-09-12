@@ -1,5 +1,5 @@
 import { Header } from "@/components/navigation/header";
-import { LiveSportsHero } from "@/components/hero/live-sports-hero";
+import { HeroCarousel } from "@/components/hero/hero-carousel";
 import { LiveSportsSection } from "@/components/sections/live-sports-section";
 import { SportsShowsSection } from "@/components/sections/sports-shows-section";
 import { GameHighlightsSection } from "@/components/sections/game-highlights-section";
@@ -30,7 +30,7 @@ export default function HomePage() {
       <div className="hidden">
         <BreakingNewsTicker />
       </div>
-      <LiveSportsHero />
+      <HeroCarousel />
       <main className="relative z-10 -mt-16 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {false && (
