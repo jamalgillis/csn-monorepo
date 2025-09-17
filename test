@@ -1,0 +1,1 @@
+rclone copy /Volumes/Samsung T5/Blackmagic Camera App Files b2:MyLocalBackups/Blackmagic\ Camera\ App\ Files --checksum --progress -v --log-file=upload.log --dry-run

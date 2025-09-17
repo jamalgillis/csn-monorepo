@@ -1,0 +1,276 @@
+/* CSN Admin Dashboard Theme - shadcn/ui Based Sports Theme */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap');
+
+:root {
+  /* shadcn/ui Dark Theme Base with Sports Customization */
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --card: 222.2 84% 4.9%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222.2 84% 4.9%;
+  --popover-foreground: 210 40% 98%;
+  
+  /* Sports Red Primary */
+  --primary: 0 84% 60%;
+  --primary-foreground: 210 40% 98%;
+  
+  /* Sports Blue Secondary */
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  
+  /* Muted backgrounds */
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  
+  /* Sports Yellow Accent */
+  --accent: 45 93% 47%;
+  --accent-foreground: 222.2 84% 4.9%;
+  
+  /* Status Colors for Sports */
+  --destructive: 0 84% 60%; /* Red for live/urgent */
+  --destructive-foreground: 210 40% 98%;
+  
+  /* Custom Sports Status Colors */
+  --success: 142 71% 45%; /* Green for completed games */
+  --warning: 45 93% 47%; /* Yellow for scheduled */
+  --info: 217 91% 60%; /* Blue for informational */
+  
+  /* Borders and inputs */
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 0 84% 60%;
+  
+  /* Chart colors for analytics */
+  --chart-1: 0 84% 60%;   /* Sports Red */
+  --chart-2: 217 91% 60%; /* Sports Blue */
+  --chart-3: 45 93% 47%;  /* Sports Yellow */
+  --chart-4: 142 71% 45%; /* Green */
+  --chart-5: 262 83% 58%; /* Purple */
+  
+  /* shadcn/ui radius */
+  --radius: 0.5rem;
+  
+  /* Custom fonts */
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Base shadcn/ui styles with sports customizations */
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: var(--font-sans);
+}
+
+/* shadcn/ui component overrides for sports theme */
+.bg-background { background-color: hsl(var(--background)); }
+.bg-foreground { background-color: hsl(var(--foreground)); }
+.bg-card { background-color: hsl(var(--card)); }
+.bg-primary { background-color: hsl(var(--primary)); }
+.bg-secondary { background-color: hsl(var(--secondary)); }
+.bg-muted { background-color: hsl(var(--muted)); }
+.bg-accent { background-color: hsl(var(--accent)); }
+.bg-destructive { background-color: hsl(var(--destructive)); }
+
+.text-foreground { color: hsl(var(--foreground)); }
+.text-primary { color: hsl(var(--primary)); }
+.text-secondary { color: hsl(var(--secondary)); }
+.text-muted-foreground { color: hsl(var(--muted-foreground)); }
+.text-accent-foreground { color: hsl(var(--accent-foreground)); }
+
+.border { border-color: hsl(var(--border)); }
+.border-primary { border-color: hsl(var(--primary)); }
+.border-destructive { border-color: hsl(var(--destructive)); }
+
+/* Custom sports status classes using shadcn patterns */
+.status-live {
+  background-color: hsl(var(--destructive) / 0.1);
+  color: hsl(var(--destructive));
+  border: 1px solid hsl(var(--destructive) / 0.2);
+}
+
+.status-scheduled {
+  background-color: hsl(var(--info) / 0.1);
+  color: hsl(var(--info));
+  border: 1px solid hsl(var(--info) / 0.2);
+}
+
+.status-completed {
+  background-color: hsl(var(--success) / 0.1);
+  color: hsl(var(--success));
+  border: 1px solid hsl(var(--success) / 0.2);
+}
+
+.status-draft {
+  background-color: hsl(var(--warning) / 0.1);
+  color: hsl(var(--warning));
+  border: 1px solid hsl(var(--warning) / 0.2);
+}
+
+/* Live indicator with pulse animation */
+.live-indicator {
+  background-color: hsl(var(--destructive));
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Metric cards with hover effects */
+.metric-card {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius));
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.metric-card:hover {
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transform: translateY(-2px);
+}
+
+/* Sidebar navigation */
+.sidebar-nav-item {
+  color: hsl(var(--muted-foreground));
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: calc(var(--radius) - 2px);
+}
+
+.sidebar-nav-item:hover {
+  background-color: hsl(var(--accent) / 0.1);
+  color: hsl(var(--foreground));
+}
+
+.sidebar-nav-item.active {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+/* Quick action buttons */
+.quick-action {
+  background-color: hsl(var(--card));
+  border: 2px dashed hsl(var(--border));
+  border-radius: var(--radius);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  min-height: 120px;
+}
+
+.quick-action:hover {
+  border-color: hsl(var(--primary));
+  background-color: hsl(var(--primary) / 0.05);
+  transform: translateY(-2px);
+}
+
+/* Chart container */
+.chart-container {
+  background-color: hsl(var(--card));
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+/* Activity feed */
+.activity-item {
+  border-left: 3px solid hsl(var(--border));
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.activity-item:hover {
+  background-color: hsl(var(--muted) / 0.5);
+  border-left-color: hsl(var(--primary));
+}
+
+.activity-item.live {
+  border-left-color: hsl(var(--destructive));
+  background-color: hsl(var(--destructive) / 0.05);
+}
+
+/* Glass effect for modern look */
+.glass-effect {
+  background-color: hsl(var(--background) / 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Sports gradient for headers */
+.sports-gradient {
+  background: linear-gradient(135deg, 
+    hsl(var(--primary)) 0%, 
+    hsl(var(--info)) 50%, 
+    hsl(var(--warning)) 100%);
+}
+
+/* Custom scrollbar for dark theme */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted-foreground));
+  border-radius: 3px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary));
+}
+
+/* Typography improvements */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  color: hsl(var(--foreground));
+}
+
+.text-sports-gradient {
+  background: linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Form elements with sports theme */
+.form-input {
+  background-color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.form-input:focus {
+  border-color: hsl(var(--primary));
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.2);
+}
+
+/* Button variants */
+.btn-primary {
+  background-color: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.btn-secondary {
+  background-color: hsl(var(--secondary));
+  color: hsl(var(--secondary-foreground));
+}
+
+.btn-ghost {
+  background-color: transparent;
+  color: hsl(var(--foreground));
+}
+
+.btn-ghost:hover {
+  background-color: hsl(var(--accent) / 0.1);
+}

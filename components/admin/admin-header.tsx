@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { SidebarTrigger } from "@/components/ui/sidebar"
 import { Bell, Settings, LogOut } from "lucide-react"
 import Link from "next/link"
 
@@ -8,6 +9,7 @@ export function AdminHeader() {
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="flex h-16 items-center justify-between px-6">
         <div className="flex items-center space-x-4">
+          <SidebarTrigger />
           <Link href="/admin" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
               <span className="text-primary-foreground font-bold text-sm">CSN</span>
