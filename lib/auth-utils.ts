@@ -15,7 +15,7 @@ export async function isCsnMember(): Promise<boolean> {
     })
 
     return memberships.data.some(membership => 
-      membership.organization.slug === 'csn' || 
+      membership.organization.slug === 'csn-staff' || 
       membership.organization.name.toLowerCase().includes('csn')
     )
   } catch (error) {
@@ -39,7 +39,7 @@ export async function isCsnAdmin(): Promise<boolean> {
     })
 
     const csnMembership = memberships.data.find(membership => 
-      membership.organization.slug === 'csn' || 
+      membership.organization.slug === 'csn-staff' || 
       membership.organization.name.toLowerCase().includes('csn')
     )
 

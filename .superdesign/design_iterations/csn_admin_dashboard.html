@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSN Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="csn_admin_theme.css">
+    
+    <style>
+        /* Animation implementations */
+        .page-load { animation: pageLoad 0.6s ease-out; }
+        .sidebar-load { animation: sidebarLoad 0.4s ease-out 0.1s both; }
+        .card-load { animation: cardLoad 0.3s ease-out both; }
+        .card-load:nth-child(2) { animation-delay: 0.1s; }
+        .card-load:nth-child(3) { animation-delay: 0.2s; }
+        .card-load:nth-child(4) { animation-delay: 0.3s; }
+        
+        @keyframes pageLoad {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes sidebarLoad {
+            from { transform: translateX(-280px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @keyframes cardLoad {
+            from { transform: translateY(20px) scale(0.98); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+        
+        .sidebar-nav-item {
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .sidebar-nav-item:hover {
+            transform: translateX(4px);
+            background-color: hsl(var(--accent) / 0.1);
+        }
+        
+        .metric-card {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .metric-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .quick-action:hover {
+            transform: translateY(-2px);
+        }
+        
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-background text-foreground font-sans">
+    <!-- Header -->
+    <header class="admin-header fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b bg-card/80 backdrop-blur-sm">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="lg:hidden p-2 hover:bg-accent/10 rounded-md">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                    <i data-lucide="zap" class="w-5 h-5 text-primary-foreground"></i>
+                </div>
+                <h1 class="text-xl font-semibold">CSN Admin Dashboard</h1>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="relative hidden md:block">
+                <i data-lucide="search" class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground"></i>
+                <input type="text" placeholder="Search..." class="pl-10 pr-4 py-2 bg-background border border-border rounded-md w-64 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+            </div>
+            <button class="relative p-2 hover:bg-accent/10 rounded-md">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full live-indicator"></span>
+            </button>
+            <button class="p-2 hover:bg-accent/10 rounded-md">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+            </button>
+            <div class="w-8 h-8 bg-primary rounded-full"></div>
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="admin-sidebar sidebar-load fixed left-0 top-16 bottom-0 w-64 bg-card border-r overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40">
+        <nav class="p-4 space-y-2">
+            <div class="sidebar-nav-item active flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <span>Dashboard</span>
+            </div>
+            
+            <div class="space-y-1">
+                <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer" onclick="toggleSubmenu('games-menu')">
+                    <i data-lucide="gamepad-2" class="w-4 h-4"></i>
+                    <span>Games & Scheduling</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 ml-auto transition-transform" id="games-icon"></i>
+                </div>
+                <div id="games-menu" class="hidden ml-7 space-y-1">
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="radio" class="w-4 h-4"></i>
+                        <span>Live Games Management</span>
+                    </div>
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="calendar-plus" class="w-4 h-4"></i>
+                        <span>Schedule Games</span>
+                    </div>
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="trophy" class="w-4 h-4"></i>
+                        <span>Game Results & Stats</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="space-y-1">
+                <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm cursor-pointer" onclick="toggleSubmenu('content-menu')">
+                    <i data-lucide="tv" class="w-4 h-4"></i>
+                    <span>Content Management</span>
+                    <i data-lucide="chevron-right" class="w-4 h-4 ml-auto transition-transform" id="content-icon"></i>
+                </div>
+                <div id="content-menu" class="hidden ml-7 space-y-1">
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="clapperboard" class="w-4 h-4"></i>
+                        <span>Shows & Series</span>
+                    </div>
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="headphones" class="w-4 h-4"></i>
+                        <span>Podcasts & Audio</span>
+                    </div>
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="video" class="w-4 h-4"></i>
+                        <span>Video Content</span>
+                    </div>
+                    <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span>Photo Gallery</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="newspaper" class="w-4 h-4"></i>
+                <span>News & Articles</span>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="users" class="w-4 h-4"></i>
+                <span>Teams & Players</span>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="trending-up" class="w-4 h-4"></i>
+                <span>Analytics & Reports</span>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="message-circle" class="w-4 h-4"></i>
+                <span>Chat Moderation</span>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="user-check" class="w-4 h-4"></i>
+                <span>User Management</span>
+            </div>
+            
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                <span>Settings</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main page-load lg:ml-64 pt-16 p-6 min-h-screen">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h2 class="text-3xl font-bold mb-2">Dashboard Overview</h2>
+            <p class="text-muted-foreground">Welcome back! Here's what's happening with CSN today.</p>
+        </div>
+
+        <!-- Metrics Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="metric-card card-load bg-card p-6 rounded-lg border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-muted-foreground">Live Games Now</h3>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-destructive rounded-full live-indicator"></div>
+                        <i data-lucide="radio" class="w-4 h-4 text-destructive"></i>
+                    </div>
+                </div>
+                <div class="text-3xl font-bold text-destructive mb-2">3</div>
+                <p class="text-xs text-muted-foreground">McLennan vs Vernon, Temple vs Cisco, Hill vs Navarro</p>
+            </div>
+
+            <div class="metric-card card-load bg-card p-6 rounded-lg border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-muted-foreground">Scheduled This Week</h3>
+                    <i data-lucide="calendar" class="w-4 h-4 text-info"></i>
+                </div>
+                <div class="text-3xl font-bold text-info mb-2">12</div>
+                <p class="text-xs text-muted-foreground">+3 from last week</p>
+            </div>
+
+            <div class="metric-card card-load bg-card p-6 rounded-lg border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-muted-foreground">Active Shows</h3>
+                    <i data-lucide="play-circle" class="w-4 h-4 text-warning"></i>
+                </div>
+                <div class="text-3xl font-bold text-warning mb-2">8</div>
+                <p class="text-xs text-muted-foreground">2 new episodes today</p>
+            </div>
+
+            <div class="metric-card card-load bg-card p-6 rounded-lg border">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-muted-foreground">Media Uploaded Today</h3>
+                    <i data-lucide="upload" class="w-4 h-4 text-success"></i>
+                </div>
+                <div class="text-3xl font-bold text-success mb-2">24</div>
+                <p class="text-xs text-muted-foreground">16 videos, 8 photos</p>
+            </div>
+        </div>
+
+        <!-- Analytics Charts -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold mb-4">Weekly Viewership Trends</h3>
+                <canvas id="viewership-chart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="chart-container">
+                <h3 class="text-lg font-semibold mb-4">Content Categories</h3>
+                <canvas id="categories-chart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="mb-8">
+            <h3 class="text-xl font-semibold mb-4">Quick Actions</h3>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="quick-action flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer group">
+                    <i data-lucide="calendar-plus" class="w-8 h-8 text-primary mb-3 group-hover:scale-110 transition-transform"></i>
+                    <h4 class="font-semibold mb-2">Schedule New Game</h4>
+                    <p class="text-sm text-muted-foreground text-center">Add a new game to the schedule</p>
+                </div>
+                
+                <div class="quick-action flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer group">
+                    <i data-lucide="upload" class="w-8 h-8 text-warning mb-3 group-hover:scale-110 transition-transform"></i>
+                    <h4 class="font-semibold mb-2">Upload Media</h4>
+                    <p class="text-sm text-muted-foreground text-center">Add photos, videos, or highlights</p>
+                </div>
+                
+                <div class="quick-action flex flex-col items-center justify-center p-6 rounded-lg cursor-pointer group">
+                    <i data-lucide="plus-circle" class="w-8 h-8 text-info mb-3 group-hover:scale-110 transition-transform"></i>
+                    <h4 class="font-semibold mb-2">Create Show Episode</h4>
+                    <p class="text-sm text-muted-foreground text-center">Add new content to shows</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="bg-card rounded-lg border">
+            <div class="p-6 border-b">
+                <h3 class="text-lg font-semibold">Recent Activity</h3>
+            </div>
+            <div class="divide-y">
+                <div class="activity-item live p-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-2 h-2 bg-destructive rounded-full live-indicator"></div>
+                        <i data-lucide="radio" class="w-4 h-4 text-destructive"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">McLennan vs Vernon volleyball game started live</p>
+                            <p class="text-sm text-muted-foreground">2 minutes ago</p>
+                        </div>
+                        <span class="status-live px-2 py-1 rounded text-xs font-medium">LIVE</span>
+                    </div>
+                </div>
+                
+                <div class="activity-item p-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="upload" class="w-4 h-4 text-success"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">Volleyball highlights uploaded by Admin</p>
+                            <p class="text-sm text-muted-foreground">15 minutes ago</p>
+                        </div>
+                        <span class="status-completed px-2 py-1 rounded text-xs font-medium">COMPLETED</span>
+                    </div>
+                </div>
+                
+                <div class="activity-item p-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="users" class="w-4 h-4 text-info"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">15 new user signups today</p>
+                            <p class="text-sm text-muted-foreground">1 hour ago</p>
+                        </div>
+                        <span class="status-scheduled px-2 py-1 rounded text-xs font-medium">INFO</span>
+                    </div>
+                </div>
+                
+                <div class="activity-item p-4">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="calendar" class="w-4 h-4 text-warning"></i>
+                        <div class="flex-1">
+                            <p class="font-medium">Temple vs Cisco game scheduled for tomorrow</p>
+                            <p class="text-sm text-muted-foreground">2 hours ago</p>
+                        </div>
+                        <span class="status-draft px-2 py-1 rounded text-xs font-medium">SCHEDULED</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 lg:hidden hidden" onclick="closeSidebar()"></div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        sidebarToggle.addEventListener('click', toggleSidebar);
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        }
+
+        // Submenu functionality
+        function toggleSubmenu(menuId) {
+            const menu = document.getElementById(menuId);
+            const icon = document.getElementById(menuId.replace('-menu', '-icon'));
+            
+            menu.classList.toggle('hidden');
+            icon.style.transform = menu.classList.contains('hidden') ? 'rotate(0deg)' : 'rotate(90deg)';
+        }
+
+        // Initialize charts
+        const viewershipCtx = document.getElementById('viewership-chart').getContext('2d');
+        new Chart(viewershipCtx, {
+            type: 'line',
+            data: {
+                labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+                datasets: [{
+                    label: 'Viewers',
+                    data: [1200, 1900, 3000, 5000, 2000, 3000, 4500],
+                    borderColor: 'hsl(0 84% 60%)',
+                    backgroundColor: 'hsl(0 84% 60% / 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: 'hsl(210 40% 98%)' }
+                    }
+                },
+                scales: {
+                    x: { ticks: { color: 'hsl(215 20.2% 65.1%)' } },
+                    y: { ticks: { color: 'hsl(215 20.2% 65.1%)' } }
+                }
+            }
+        });
+
+        const categoriesCtx = document.getElementById('categories-chart').getContext('2d');
+        new Chart(categoriesCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Games', 'Shows', 'Highlights', 'News'],
+                datasets: [{
+                    data: [40, 25, 20, 15],
+                    backgroundColor: [
+                        'hsl(0 84% 60%)',
+                        'hsl(217 91% 60%)', 
+                        'hsl(45 93% 47%)',
+                        'hsl(142 71% 45%)'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        labels: { color: 'hsl(210 40% 98%)' }
+                    }
+                }
+            }
+        });
+
+        // Add live counter animation
+        function updateLiveCounter() {
+            const counters = document.querySelectorAll('.live-indicator');
+            counters.forEach(counter => {
+                counter.style.animation = 'none';
+                counter.offsetHeight; // Trigger reflow
+                counter.style.animation = 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+            });
+        }
+
+        // Start live animations
+        updateLiveCounter();
+        setInterval(updateLiveCounter, 2000);
+    </script>
+</body>
+</html>

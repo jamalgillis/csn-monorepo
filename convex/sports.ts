@@ -851,3 +851,245 @@ export const endGame = internalMutation({
     return { success: true };
   }
 });
+
+// NEW: Hero Carousel Content Query
+export const getHeroCarouselContent = query({
+  args: {},
+  handler: async (ctx) => {
+    const carouselItems = [];
+
+    // 1. Get ALL live games (highest priority)
+    const liveGames = await ctx.db
+      .query("games")
+      .filter((q) => q.eq(q.field("status"), "in_progress"))
+      .order("desc")
+      .collect();
+
+    for (const game of liveGames) {
+      const [homeTeam, awayTeam, sport] = await Promise.all([
+        ctx.db.get(game.home_team_id),
+        ctx.db.get(game.away_team_id),
+        ctx.db.get(game.sport_id)
+      ]);
+
+      if (homeTeam && awayTeam && sport) {
+        carouselItems.push({
+          id: game._id,
+          type: "live_game" as const,
+          priority: 1, // Highest priority
+          title: `${awayTeam.name} @ ${homeTeam.name}`,
+          subtitle: `${sport.name} - Live`,
+          thumbnail: homeTeam.logo_url || "/placeholder-game.jpg",
+          isLive: true,
+          navigationUrl: `/games/${game._id}`,
+          homeTeam: homeTeam.name,
+          awayTeam: awayTeam.name,
+          homeScore: game.home_score || 0,
+          awayScore: game.away_score || 0,
+          sport: sport.name,
+          quarter: game.quarter ? `Set ${game.quarter}` : "Live",
+          timeLeft: game.time_left || "Live",
+          venue: game.venue,
+          videoUrl: game.video_url
+        });
+      }
+    }
+
+    // 2. Get featured live shows
+    const liveShows = await ctx.db
+      .query("content")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("status"), "published"),
+          q.eq(q.field("type"), "show"),
+          q.eq(q.field("featured"), true)
+        )
+      )
+      .order("desc")
+      .take(3); // Limit to 3 featured shows
+
+    for (const show of liveShows) {
+      carouselItems.push({
+        id: show._id,
+        type: "live_show" as const,
+        priority: 2,
+        title: show.title,
+        subtitle: "Featured Show",
+        thumbnail: show.backdrop_url || show.poster_url,
+        isLive: show.title.includes("Live") || show.title.includes("Primetime"),
+        navigationUrl: `/shows/${show._id}`,
+        showTitle: show.title,
+        host: show.cast[0] || "CSN Sports",
+        description: show.description,
+        videoUrl: show.video_url
+      });
+    }
+
+    // 3. Get today's scheduled games (next 5)
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const todaysGames = await ctx.db
+      .query("games")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("status"), "scheduled"),
+          q.gte(q.field("game_date"), today.toISOString()),
+          q.lt(q.field("game_date"), tomorrow.toISOString())
+        )
+      )
+      .order("asc")
+      .take(5);
+
+    for (const game of todaysGames) {
+      const [homeTeam, awayTeam, sport] = await Promise.all([
+        ctx.db.get(game.home_team_id),
+        ctx.db.get(game.away_team_id),
+        ctx.db.get(game.sport_id)
+      ]);
+
+      if (homeTeam && awayTeam && sport) {
+        const gameDate = new Date(game.game_date);
+        const gameTime = gameDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric', 
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+
+        carouselItems.push({
+          id: game._id,
+          type: "scheduled_game" as const,
+          priority: 3,
+          title: `${awayTeam.name} @ ${homeTeam.name}`,
+          subtitle: `${sport.name} - Today`,
+          thumbnail: homeTeam.logo_url || "/placeholder-game.jpg",
+          isLive: false,
+          navigationUrl: `/games/${game._id}`,
+          homeTeam: homeTeam.name,
+          awayTeam: awayTeam.name,
+          sport: sport.name,
+          gameTime: gameTime,
+          venue: game.venue,
+          videoUrl: game.video_url
+        });
+      }
+    }
+
+    // 4. Get featured content (highlights, special features)
+    const featuredContent = await ctx.db
+      .query("content")
+      .filter((q) => 
+        q.and(
+          q.eq(q.field("status"), "published"),
+          q.eq(q.field("featured"), true),
+          q.or(
+            q.eq(q.field("type"), "highlight"),
+            q.eq(q.field("type"), "feature"),
+            q.eq(q.field("type"), "hype-video")
+          )
+        )
+      )
+      .order("desc")
+      .take(3);
+
+    for (const content of featuredContent) {
+      carouselItems.push({
+        id: content._id,
+        type: "featured_content" as const,
+        priority: 4,
+        title: content.title,
+        subtitle: content.type.charAt(0).toUpperCase() + content.type.slice(1),
+        thumbnail: content.backdrop_url || content.poster_url,
+        isLive: false,
+        navigationUrl: `/content/${content._id}`, // Or appropriate route
+        description: content.description,
+        videoUrl: content.video_url
+      });
+    }
+
+    // 5. Get next week's big games (if we need more content)
+    if (carouselItems.length < 3) {
+      const nextWeek = new Date(today);
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      
+      const upcomingBigGames = await ctx.db
+        .query("games")
+        .filter((q) => 
+          q.and(
+            q.eq(q.field("status"), "scheduled"),
+            q.gte(q.field("game_date"), tomorrow.toISOString()),
+            q.lt(q.field("game_date"), nextWeek.toISOString())
+          )
+        )
+        .order("asc")
+        .take(3);
+
+      for (const game of upcomingBigGames) {
+        const [homeTeam, awayTeam, sport] = await Promise.all([
+          ctx.db.get(game.home_team_id),
+          ctx.db.get(game.away_team_id),
+          ctx.db.get(game.sport_id)
+        ]);
+
+        if (homeTeam && awayTeam && sport) {
+          const gameDate = new Date(game.game_date);
+          const gameTime = gameDate.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            hour: 'numeric', 
+            minute: '2-digit'
+          });
+
+          carouselItems.push({
+            id: game._id,
+            type: "upcoming_game" as const,
+            priority: 5,
+            title: `${awayTeam.name} @ ${homeTeam.name}`,
+            subtitle: `${sport.name} - Upcoming`,
+            thumbnail: homeTeam.logo_url || "/placeholder-game.jpg",
+            isLive: false,
+            navigationUrl: `/games/${game._id}`,
+            homeTeam: homeTeam.name,
+            awayTeam: awayTeam.name,
+            sport: sport.name,
+            gameTime: gameTime,
+            venue: game.venue,
+            videoUrl: game.video_url
+          });
+        }
+      }
+    }
+
+    // Sort by priority and return
+    const sortedItems = carouselItems.sort((a, b) => a.priority - b.priority);
+    
+    // Ensure we have at least one item (fallback)
+    if (sortedItems.length === 0) {
+      sortedItems.push({
+        id: "default",
+        type: "live_show" as const,
+        priority: 99,
+        title: "CSN Sports Network",
+        subtitle: "Your Home for Central Texas Sports",
+        thumbnail: "/placeholder-game.jpg",
+        isLive: false,
+        navigationUrl: "/",
+        showTitle: "CSN Sports",
+        host: "Central Texas Sports",
+        description: "The premier destination for Central Texas sports coverage"
+      });
+    }
+
+    return {
+      items: sortedItems,
+      totalItems: sortedItems.length,
+      hasLiveContent: sortedItems.some(item => item.isLive),
+      liveGameCount: sortedItems.filter(item => item.type === "live_game").length,
+      featuredShowCount: sortedItems.filter(item => item.type === "live_show").length
+    };
+  }
+});

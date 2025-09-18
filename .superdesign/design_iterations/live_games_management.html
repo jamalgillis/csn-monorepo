@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Games Management - CSN Admin</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flowbite@2.0.0/dist/flowbite.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="csn_admin_theme.css">
+    
+    <style>
+        .live-border {
+            border: 2px solid hsl(var(--destructive));
+            animation: liveBorderPulse 2s infinite;
+        }
+        
+        @keyframes liveBorderPulse {
+            0%, 100% { border-color: hsl(var(--destructive)); }
+            50% { border-color: hsl(var(--destructive) / 0.6); }
+        }
+        
+        .score-display {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3rem;
+            font-weight: 700;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .score-update {
+            animation: scoreFlash 0.6s ease-out;
+        }
+        
+        @keyframes scoreFlash {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); background-color: hsl(var(--warning) / 0.3); }
+            100% { transform: scale(1); }
+        }
+        
+        .viewer-count {
+            animation: countUp 0.5s ease-out;
+        }
+        
+        @keyframes countUp {
+            from { transform: translateY(10px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        .stream-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        
+        .stream-live {
+            background-color: hsl(var(--destructive) / 0.15);
+            color: hsl(var(--destructive));
+            border: 1px solid hsl(var(--destructive) / 0.3);
+        }
+        
+        .stream-offline {
+            background-color: hsl(var(--muted));
+            color: hsl(var(--muted-foreground));
+            border: 1px solid hsl(var(--border));
+        }
+        
+        .control-button {
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: 1px solid;
+        }
+        
+        .control-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-primary {
+            background-color: hsl(var(--primary));
+            color: hsl(var(--primary-foreground));
+            border-color: hsl(var(--primary));
+        }
+        
+        .control-destructive {
+            background-color: hsl(var(--destructive));
+            color: hsl(var(--destructive-foreground));
+            border-color: hsl(var(--destructive));
+        }
+        
+        .control-secondary {
+            background-color: hsl(var(--secondary));
+            color: hsl(var(--secondary-foreground));
+            border-color: hsl(var(--secondary));
+        }
+        
+        .event-timeline {
+            max-height: 400px;
+            overflow-y-auto;
+        }
+        
+        .event-item {
+            border-left: 3px solid hsl(var(--border));
+            transition: all 0.2s ease;
+            animation: eventSlideIn 0.3s ease-out;
+        }
+        
+        .event-item:hover {
+            border-left-color: hsl(var(--primary));
+            background-color: hsl(var(--muted) / 0.5);
+        }
+        
+        .event-score { border-left-color: hsl(var(--warning)); }
+        .event-timeout { border-left-color: hsl(var(--info)); }
+        .event-substitution { border-left-color: hsl(var(--success)); }
+        .event-end { border-left-color: hsl(var(--destructive)); }
+        
+        @keyframes eventSlideIn {
+            from { transform: translateX(-20px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, hsl(var(--card)), hsl(var(--muted) / 0.5));
+            border: 1px solid hsl(var(--border));
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .quick-score-btn {
+            width: 60px;
+            height: 40px;
+            border-radius: 8px;
+            border: 2px solid hsl(var(--border));
+            background-color: hsl(var(--card));
+            color: hsl(var(--foreground));
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        
+        .quick-score-btn:hover {
+            border-color: hsl(var(--primary));
+            background-color: hsl(var(--primary) / 0.1);
+            transform: scale(1.05);
+        }
+        
+        .stream-quality-indicator {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .quality-bar {
+            width: 3px;
+            height: 12px;
+            background-color: hsl(var(--muted));
+            border-radius: 2px;
+            transition: all 0.2s ease;
+        }
+        
+        .quality-bar.active { background-color: hsl(var(--success)); }
+        .quality-bar.warning { background-color: hsl(var(--warning)); }
+        .quality-bar.error { background-color: hsl(var(--destructive)); }
+    </style>
+</head>
+<body class="bg-background text-foreground font-sans">
+    <!-- Header -->
+    <header class="admin-header fixed top-0 left-0 right-0 z-50 h-16 px-6 flex items-center justify-between border-b bg-card/80 backdrop-blur-sm">
+        <div class="flex items-center gap-4">
+            <button id="sidebar-toggle" class="lg:hidden p-2 hover:bg-accent/10 rounded-md">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center gap-3">
+                <button onclick="history.back()" class="p-2 hover:bg-accent/10 rounded-md">
+                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
+                </button>
+                <div class="w-8 h-8 bg-destructive rounded-lg flex items-center justify-center live-indicator">
+                    <i data-lucide="radio" class="w-5 h-5 text-destructive-foreground"></i>
+                </div>
+                <h1 class="text-xl font-semibold">Live Games Management</h1>
+                <div class="live-indicator w-3 h-3 bg-destructive rounded-full"></div>
+            </div>
+        </div>
+        
+        <div class="flex items-center gap-4">
+            <div class="stream-status stream-live">
+                <div class="w-2 h-2 bg-current rounded-full live-indicator"></div>
+                <span class="text-sm font-medium">3 Games Live</span>
+            </div>
+            <div class="viewer-count text-sm font-medium">
+                <i data-lucide="users" class="w-4 h-4 inline mr-1"></i>
+                <span id="total-viewers">2,847</span> watching
+            </div>
+            <button class="relative p-2 hover:bg-accent/10 rounded-md">
+                <i data-lucide="bell" class="w-5 h-5"></i>
+                <span class="absolute -top-1 -right-1 w-3 h-3 bg-destructive rounded-full live-indicator"></span>
+            </button>
+            <div class="w-8 h-8 bg-primary rounded-full"></div>
+        </div>
+    </header>
+
+    <!-- Sidebar (Collapsed) -->
+    <aside id="sidebar" class="admin-sidebar fixed left-0 top-16 bottom-0 w-64 bg-card border-r overflow-y-auto transform -translate-x-full lg:translate-x-0 transition-transform duration-300 z-40">
+        <nav class="p-4 space-y-2">
+            <div class="sidebar-nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="bar-chart-3" class="w-4 h-4"></i>
+                <span>Dashboard</span>
+            </div>
+            <div class="sidebar-nav-item active flex items-center gap-3 px-3 py-2 rounded-md text-sm">
+                <i data-lucide="radio" class="w-4 h-4"></i>
+                <span>Live Games Management</span>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 pt-16 p-6 min-h-screen">
+        <!-- Page Header -->
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8 gap-4">
+            <div>
+                <h2 class="text-3xl font-bold mb-2">Live Games Control Center</h2>
+                <p class="text-muted-foreground">Monitor and control live games in real-time</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <button class="control-button control-secondary">
+                    <i data-lucide="download" class="w-4 h-4 inline mr-2"></i>
+                    Export Data
+                </button>
+                <button class="control-button control-primary">
+                    <i data-lucide="tv" class="w-4 h-4 inline mr-2"></i>
+                    Stream Monitor
+                </button>
+            </div>
+        </div>
+
+        <!-- Live Games Grid -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-6 mb-8">
+            <!-- Game 1: McLennan vs Vernon -->
+            <div class="bg-card rounded-lg border live-border p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-destructive rounded-full live-indicator"></div>
+                        <span class="text-sm font-medium text-destructive">LIVE</span>
+                        <span class="text-xs text-muted-foreground">Set 3 • 15:42</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="stream-quality-indicator">
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar"></div>
+                        </div>
+                        <span class="text-xs text-success">1080p</span>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-semibold mb-2">McLennan vs Vernon College</h3>
+                    <p class="text-sm text-muted-foreground">NJCAA Volleyball • McLennan Gymnasium</p>
+                </div>
+
+                <!-- Score Display -->
+                <div class="grid grid-cols-3 items-center gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">McLennan</div>
+                        <div class="score-display text-primary" id="score-home-1">21</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-muted-foreground mb-2">Sets</div>
+                        <div class="text-2xl font-bold">2 - 1</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">Vernon</div>
+                        <div class="score-display text-secondary" id="score-away-1">18</div>
+                    </div>
+                </div>
+
+                <!-- Quick Score Buttons -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('home-1', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('home-1', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">McLennan</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('away-1', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('away-1', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">Vernon</div>
+                    </div>
+                </div>
+
+                <!-- Stream Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-warning">924</div>
+                        <div class="text-xs text-muted-foreground">Viewers</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-info">5:42</div>
+                        <div class="text-xs text-muted-foreground">Stream Time</div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="control-button control-primary text-sm py-2">
+                        <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
+                        Controls
+                    </button>
+                    <button class="control-button control-destructive text-sm py-2">
+                        <i data-lucide="square" class="w-4 h-4 inline mr-1"></i>
+                        End Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game 2: Temple vs Cisco -->
+            <div class="bg-card rounded-lg border live-border p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-destructive rounded-full live-indicator"></div>
+                        <span class="text-sm font-medium text-destructive">LIVE</span>
+                        <span class="text-xs text-muted-foreground">Set 2 • 12:35</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="stream-quality-indicator">
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar warning"></div>
+                            <div class="quality-bar"></div>
+                        </div>
+                        <span class="text-xs text-warning">720p</span>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Temple vs Cisco College</h3>
+                    <p class="text-sm text-muted-foreground">NJCAA Volleyball • Temple Gymnasium</p>
+                </div>
+
+                <!-- Score Display -->
+                <div class="grid grid-cols-3 items-center gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">Temple</div>
+                        <div class="score-display text-primary" id="score-home-2">15</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-muted-foreground mb-2">Sets</div>
+                        <div class="text-2xl font-bold">1 - 0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">Cisco</div>
+                        <div class="score-display text-secondary" id="score-away-2">12</div>
+                    </div>
+                </div>
+
+                <!-- Quick Score Buttons -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('home-2', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('home-2', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">Temple</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('away-2', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('away-2', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">Cisco</div>
+                    </div>
+                </div>
+
+                <!-- Stream Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-warning">756</div>
+                        <div class="text-xs text-muted-foreground">Viewers</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-info">3:15</div>
+                        <div class="text-xs text-muted-foreground">Stream Time</div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="control-button control-primary text-sm py-2">
+                        <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
+                        Controls
+                    </button>
+                    <button class="control-button control-destructive text-sm py-2">
+                        <i data-lucide="square" class="w-4 h-4 inline mr-1"></i>
+                        End Game
+                    </button>
+                </div>
+            </div>
+
+            <!-- Game 3: Hill vs Navarro -->
+            <div class="bg-card rounded-lg border live-border p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-3 h-3 bg-destructive rounded-full live-indicator"></div>
+                        <span class="text-sm font-medium text-destructive">LIVE</span>
+                        <span class="text-xs text-muted-foreground">Set 1 • 8:22</span>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <div class="stream-quality-indicator">
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                            <div class="quality-bar active"></div>
+                        </div>
+                        <span class="text-xs text-success">1080p</span>
+                    </div>
+                </div>
+
+                <div class="text-center mb-6">
+                    <h3 class="text-lg font-semibold mb-2">Hill vs Navarro College</h3>
+                    <p class="text-sm text-muted-foreground">NJCAA Volleyball • Hill Gymnasium</p>
+                </div>
+
+                <!-- Score Display -->
+                <div class="grid grid-cols-3 items-center gap-4 mb-6">
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">Hill</div>
+                        <div class="score-display text-primary" id="score-home-3">8</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-xs text-muted-foreground mb-2">Sets</div>
+                        <div class="text-2xl font-bold">0 - 0</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm font-medium text-muted-foreground mb-1">Navarro</div>
+                        <div class="score-display text-secondary" id="score-away-3">11</div>
+                    </div>
+                </div>
+
+                <!-- Quick Score Buttons -->
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('home-3', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('home-3', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">Hill</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="flex justify-center gap-1 mb-2">
+                            <button class="quick-score-btn" onclick="updateScore('away-3', 1)">+1</button>
+                            <button class="quick-score-btn" onclick="updateScore('away-3', -1)">-1</button>
+                        </div>
+                        <div class="text-xs text-muted-foreground">Navarro</div>
+                    </div>
+                </div>
+
+                <!-- Stream Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-4 p-3 bg-muted/50 rounded-lg">
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-warning">1,167</div>
+                        <div class="text-xs text-muted-foreground">Viewers</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold text-info">1:22</div>
+                        <div class="text-xs text-muted-foreground">Stream Time</div>
+                    </div>
+                </div>
+
+                <!-- Control Buttons -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button class="control-button control-primary text-sm py-2">
+                        <i data-lucide="settings" class="w-4 h-4 inline mr-1"></i>
+                        Controls
+                    </button>
+                    <button class="control-button control-destructive text-sm py-2">
+                        <i data-lucide="square" class="w-4 h-4 inline mr-1"></i>
+                        End Game
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Section: Event Timeline & Analytics -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <!-- Event Timeline -->
+            <div class="bg-card rounded-lg border p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h3 class="text-lg font-semibold">Live Event Timeline</h3>
+                    <div class="flex items-center gap-2">
+                        <div class="w-2 h-2 bg-destructive rounded-full live-indicator"></div>
+                        <span class="text-sm text-destructive font-medium">Real-time</span>
+                    </div>
+                </div>
+
+                <div class="event-timeline space-y-3">
+                    <div class="event-item event-score p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">McLennan scores!</div>
+                                <div class="text-sm text-muted-foreground">Set 3 • 15:42 • McLennan 21-18 Vernon</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">2s ago</div>
+                        </div>
+                    </div>
+
+                    <div class="event-item event-timeout p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">Temple timeout</div>
+                                <div class="text-sm text-muted-foreground">Set 2 • 12:35 • Temple 15-12 Cisco</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">45s ago</div>
+                        </div>
+                    </div>
+
+                    <div class="event-item event-score p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">Navarro scores!</div>
+                                <div class="text-sm text-muted-foreground">Set 1 • 8:22 • Hill 8-11 Navarro</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">1m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="event-item event-substitution p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">McLennan substitution</div>
+                                <div class="text-sm text-muted-foreground">Player #12 in for #8</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">2m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="event-item event-score p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">Cisco scores!</div>
+                                <div class="text-sm text-muted-foreground">Set 2 • 12:35 • Temple 15-12 Cisco</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">3m ago</div>
+                        </div>
+                    </div>
+
+                    <div class="event-item event-end p-3 pl-6 rounded-lg">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="font-medium">Set 2 ends</div>
+                                <div class="text-sm text-muted-foreground">McLennan wins 25-22</div>
+                            </div>
+                            <div class="text-xs text-muted-foreground">4m ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Analytics -->
+            <div class="bg-card rounded-lg border p-6">
+                <h3 class="text-lg font-semibold mb-6">Live Analytics</h3>
+
+                <!-- Viewer Stats -->
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="stat-card">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-primary mb-1">2,847</div>
+                            <div class="text-sm text-muted-foreground">Total Viewers</div>
+                            <div class="text-xs text-success mt-1">↑ 12% from last game</div>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="text-center">
+                            <div class="text-2xl font-bold text-warning mb-1">1.8k</div>
+                            <div class="text-sm text-muted-foreground">Peak Concurrent</div>
+                            <div class="text-xs text-success mt-1">↑ 25% peak increase</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Viewer Chart -->
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium mb-3">Viewer Trends (Last Hour)</h4>
+                    <canvas id="viewer-chart" width="400" height="200"></canvas>
+                </div>
+
+                <!-- Stream Health -->
+                <div class="space-y-3">
+                    <h4 class="text-sm font-medium">Stream Health</h4>
+                    
+                    <div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-success rounded-full"></div>
+                            <span class="text-sm">McLennan vs Vernon</span>
+                        </div>
+                        <div class="text-sm font-medium text-success">Excellent</div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-warning rounded-full"></div>
+                            <span class="text-sm">Temple vs Cisco</span>
+                        </div>
+                        <div class="text-sm font-medium text-warning">Good</div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                        <div class="flex items-center gap-2">
+                            <div class="w-2 h-2 bg-success rounded-full"></div>
+                            <span class="text-sm">Hill vs Navarro</span>
+                        </div>
+                        <div class="text-sm font-medium text-success">Excellent</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/50 z-30 lg:hidden hidden" onclick="closeSidebar()"></div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        sidebarToggle.addEventListener('click', toggleSidebar);
+
+        function toggleSidebar() {
+            sidebar.classList.toggle('-translate-x-full');
+            sidebarOverlay.classList.toggle('hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.add('-translate-x-full');
+            sidebarOverlay.classList.add('hidden');
+        }
+
+        // Score updating functionality
+        function updateScore(scoreId, change) {
+            const scoreElement = document.getElementById(`score-${scoreId}`);
+            const currentScore = parseInt(scoreElement.textContent);
+            const newScore = Math.max(0, currentScore + change);
+            
+            // Animate score update
+            scoreElement.textContent = newScore;
+            scoreElement.classList.add('score-update');
+            
+            setTimeout(() => {
+                scoreElement.classList.remove('score-update');
+            }, 600);
+
+            // Add to event timeline
+            const team = scoreId.includes('home') ? getTeamName(scoreId, 'home') : getTeamName(scoreId, 'away');
+            addEventToTimeline(`${team} ${change > 0 ? 'scores' : 'score corrected'}!`, 'score');
+        }
+
+        function getTeamName(scoreId, type) {
+            const gameNumber = scoreId.split('-')[1];
+            const teams = {
+                '1': { home: 'McLennan', away: 'Vernon' },
+                '2': { home: 'Temple', away: 'Cisco' },
+                '3': { home: 'Hill', away: 'Navarro' }
+            };
+            return teams[gameNumber][type];
+        }
+
+        function addEventToTimeline(event, type) {
+            const timeline = document.querySelector('.event-timeline');
+            const eventDiv = document.createElement('div');
+            eventDiv.className = `event-item event-${type} p-3 pl-6 rounded-lg`;
+            eventDiv.innerHTML = `
+                <div class="flex items-center justify-between">
+                    <div>
+                        <div class="font-medium">${event}</div>
+                        <div class="text-sm text-muted-foreground">Just now</div>
+                    </div>
+                    <div class="text-xs text-muted-foreground">now</div>
+                </div>
+            `;
+            
+            timeline.insertBefore(eventDiv, timeline.firstChild);
+            
+            // Remove old events if more than 10
+            const events = timeline.querySelectorAll('.event-item');
+            if (events.length > 10) {
+                events[events.length - 1].remove();
+            }
+        }
+
+        // Live viewer count animation
+        function updateViewerCount() {
+            const viewerElement = document.getElementById('total-viewers');
+            const currentCount = parseInt(viewerElement.textContent.replace(',', ''));
+            const change = Math.floor(Math.random() * 20) - 10; // Random change -10 to +10
+            const newCount = Math.max(0, currentCount + change);
+            
+            viewerElement.textContent = newCount.toLocaleString();
+            viewerElement.classList.add('viewer-count');
+            
+            setTimeout(() => {
+                viewerElement.classList.remove('viewer-count');
+            }, 500);
+        }
+
+        // Initialize viewer chart
+        const viewerCtx = document.getElementById('viewer-chart').getContext('2d');
+        const viewerChart = new Chart(viewerCtx, {
+            type: 'line',
+            data: {
+                labels: ['50m', '40m', '30m', '20m', '10m', 'Now'],
+                datasets: [{
+                    label: 'Viewers',
+                    data: [1200, 1800, 2100, 2400, 2700, 2847],
+                    borderColor: 'hsl(0 84% 60%)',
+                    backgroundColor: 'hsl(0 84% 60% / 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    x: { 
+                        ticks: { color: 'hsl(215 20.2% 65.1%)' },
+                        grid: { color: 'hsl(217.2 32.6% 17.5%)' }
+                    },
+                    y: { 
+                        ticks: { color: 'hsl(215 20.2% 65.1%)' },
+                        grid: { color: 'hsl(217.2 32.6% 17.5%)' }
+                    }
+                }
+            }
+        });
+
+        // Live updates
+        function startLiveUpdates() {
+            // Update viewer count every 10 seconds
+            setInterval(updateViewerCount, 10000);
+            
+            // Update live indicators every 2 seconds
+            setInterval(() => {
+                const indicators = document.querySelectorAll('.live-indicator');
+                indicators.forEach(indicator => {
+                    indicator.style.animation = 'none';
+                    indicator.offsetHeight; // Trigger reflow
+                    indicator.style.animation = 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite';
+                });
+            }, 2000);
+        }
+
+        // Start live functionality
+        startLiveUpdates();
+
+        // Simulate live score updates occasionally
+        setInterval(() => {
+            const games = ['1', '2', '3'];
+            const types = ['home', 'away'];
+            const randomGame = games[Math.floor(Math.random() * games.length)];
+            const randomType = types[Math.floor(Math.random() * types.length)];
+            
+            if (Math.random() < 0.3) { // 30% chance of score update
+                updateScore(`${randomType}-${randomGame}`, 1);
+            }
+        }, 15000); // Every 15 seconds
+    </script>
+</body>
+</html>

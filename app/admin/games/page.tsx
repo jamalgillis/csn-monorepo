@@ -23,15 +23,21 @@ import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
 
 interface GameWithDetails {
-  _id: Id<"games">
-  homeTeam: string
-  awayTeam: string
+  id: Id<"games">  // Changed from _id to id to match Convex response
+  homeTeam: {
+    name: string
+    abbreviation: string
+  }
+  awayTeam: {
+    name: string
+    abbreviation: string
+  }
   homeScore: number
   awayScore: number
   status: "scheduled" | "in_progress" | "final" | "postponed"
   sport: string
   venue: string
-  gameDate: string
+  game_date: string  // Changed from gameDate to game_date to match Convex response
   gameState?: {
     quarter: string
     timeLeft: string
@@ -77,7 +83,7 @@ export default function AdminGamesPage() {
   const games = gamesData
 
   const updateScore = async (gameId: Id<"games">, team: "home" | "away", newScore: number) => {
-    const game = games.find(g => g._id === gameId)
+    const game = games.find(g => g.id === gameId)
     if (!game) return
 
     const currentScores = scoreUpdates[gameId] || { home: game.homeScore, away: game.awayScore }
@@ -101,11 +107,27 @@ export default function AdminGamesPage() {
   }
 
   const updateGameStatus = async (gameId: Id<"games">, newStatus: "scheduled" | "in_progress" | "final" | "postponed") => {
+    // Defensive check: Ensure gameId is valid
+    if (!gameId) {
+      console.error("updateGameStatus called with invalid gameId:", gameId)
+      return
+    }
+
     try {
-      await updateGameStatusMutation({
+      const updatePayload = {
         gameId,
-        status: newStatus
-      })
+        eventType: "status_change",
+        description: `Game status updated to ${newStatus}`,
+        metadata: { 
+          oldStatus: games.find(g => g.id === gameId)?.status,
+          newStatus 
+        }
+      }
+      
+      // Debug logging to verify payload
+      console.log("Updating game status with payload:", updatePayload)
+      
+      await updateGameStatusMutation(updatePayload)
     } catch (error) {
       console.error("Failed to update game status:", error)
     }
@@ -114,8 +136,8 @@ export default function AdminGamesPage() {
   const openEditModal = (game: GameWithDetails) => {
     setEditingGame(game)
     setEditForm({
-      homeTeam: game.homeTeam,
-      awayTeam: game.awayTeam,
+      homeTeam: typeof game.homeTeam === 'string' ? game.homeTeam : game.homeTeam?.name || game.homeTeam?.abbreviation || '',
+      awayTeam: typeof game.awayTeam === 'string' ? game.awayTeam : game.awayTeam?.name || game.awayTeam?.abbreviation || '',
       homeScore: game.homeScore,
       awayScore: game.awayScore,
       status: game.status,
@@ -158,10 +180,10 @@ export default function AdminGamesPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {games
           .filter((game) => game.status === "in_progress")
-          .map((game) => {
-            const displayScores = scoreUpdates[game._id] || { home: game.homeScore, away: game.awayScore }
+          .map((game, index) => {
+            const displayScores = scoreUpdates[game.id] || { home: game.homeScore, away: game.awayScore }
             return (
-              <Card key={game._id} className="border-primary/20">
+              <Card key={`live-${game.id}-${index}`} className="border-primary/20">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <Badge variant="default" className="bg-red-500 animate-pulse">
@@ -170,17 +192,17 @@ export default function AdminGamesPage() {
                     <div className="text-sm text-muted-foreground">{game.sport}</div>
                   </div>
                   <CardTitle className="text-lg">
-                    {game.awayTeam} @ {game.homeTeam}
+                    {typeof game.awayTeam === 'string' ? game.awayTeam : game.awayTeam?.name || game.awayTeam?.abbreviation} @ {typeof game.homeTeam === 'string' ? game.homeTeam : game.homeTeam?.name || game.homeTeam?.abbreviation}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="flex items-center justify-between text-2xl font-bold">
                     <div className="flex items-center space-x-2">
-                      <span className="text-sm font-normal">{game.awayTeam}</span>
+                      <span className="text-sm font-normal">{typeof game.awayTeam === 'string' ? game.awayTeam : game.awayTeam?.name || game.awayTeam?.abbreviation}</span>
                       <Input
                         type="number"
                         value={displayScores.away}
-                        onChange={(e) => updateScore(game._id, "away", Number.parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateScore(game.id, "away", Number.parseInt(e.target.value) || 0)}
                         className="w-16 text-center"
                       />
                     </div>
@@ -188,10 +210,10 @@ export default function AdminGamesPage() {
                       <Input
                         type="number"
                         value={displayScores.home}
-                        onChange={(e) => updateScore(game._id, "home", Number.parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateScore(game.id, "home", Number.parseInt(e.target.value) || 0)}
                         className="w-16 text-center"
                       />
-                      <span className="text-sm font-normal">{game.homeTeam}</span>
+                      <span className="text-sm font-normal">{typeof game.homeTeam === 'string' ? game.homeTeam : game.homeTeam?.name || game.homeTeam?.abbreviation}</span>
                     </div>
                   </div>
 
@@ -231,7 +253,7 @@ export default function AdminGamesPage() {
                         </Button>
                       </>
                     )}
-                    <Link href={`/games/${game._id}`} target="_blank">
+                    <Link href={`/games/${game.id}`} target="_blank">
                       <Button size="sm" variant="outline" className="ml-auto bg-transparent">
                         <Eye className="mr-1 h-3 w-3" />
                         View
@@ -279,13 +301,13 @@ export default function AdminGamesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {games.map((game) => {
-                const displayScores = scoreUpdates[game._id] || { home: game.homeScore, away: game.awayScore }
+              {games.map((game, index) => {
+                const displayScores = scoreUpdates[game.id] || { home: game.homeScore, away: game.awayScore }
                 return (
-                  <TableRow key={game._id}>
+                  <TableRow key={`table-${game.id}-${index}`}>
                     <TableCell>
                       <div className="font-medium">
-                        {game.awayTeam} @ {game.homeTeam}
+                        {typeof game.awayTeam === 'string' ? game.awayTeam : game.awayTeam?.name || game.awayTeam?.abbreviation} @ {typeof game.homeTeam === 'string' ? game.homeTeam : game.homeTeam?.name || game.homeTeam?.abbreviation}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {game.sport}
@@ -316,7 +338,7 @@ export default function AdminGamesPage() {
                         <Button size="sm" variant="outline" onClick={() => openEditModal(game)}>
                           <Edit className="h-3 w-3" />
                         </Button>
-                        <Link href={`/games/${game._id}`} target="_blank">
+                        <Link href={`/games/${game.id}`} target="_blank">
                           <Button size="sm" variant="outline">
                             <Eye className="h-3 w-3" />
                           </Button>
@@ -324,7 +346,7 @@ export default function AdminGamesPage() {
                         <Select 
                           value={game.status} 
                           onValueChange={(value: "scheduled" | "in_progress" | "final" | "postponed") => 
-                            updateGameStatus(game._id, value)
+                            updateGameStatus(game.id, value)
                           }
                         >
                           <SelectTrigger className="w-32 h-8">
