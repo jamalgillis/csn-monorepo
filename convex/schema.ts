@@ -95,15 +95,16 @@ export default defineSchema({
   game_events: defineTable({
     game_id: v.id("games"),
     event_type: v.union(
-      v.literal("period_start"), 
-      v.literal("period_end"), 
-      v.literal("score"), 
-      v.literal("timeout"), 
-      v.literal("substitution"), 
+      v.literal("period_start"),
+      v.literal("period_end"),
+      v.literal("score"),
+      v.literal("timeout"),
+      v.literal("substitution"),
       v.literal("penalty"),
-      v.literal("turnover"), 
-      v.literal("rebound"), 
-      v.literal("foul")
+      v.literal("turnover"),
+      v.literal("rebound"),
+      v.literal("foul"),
+      v.literal("status_change")
     ),
     period_info: v.optional(v.object({
       period_number: v.number(),

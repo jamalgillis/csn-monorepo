@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { SignInButton, SignOutButton, useUser } from '@clerk/nextjs'
 import Link from "next/link"
+import Image from "next/image"
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
@@ -17,8 +18,15 @@ export function Header() {
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}
           <div className="flex items-center space-x-4">
-            <Link href="/" className="text-2xl font-bold text-primary hover:text-primary/80 transition-colors">
-              CSN
+            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+              <Image
+                src="https://q1u9idchx6.ufs.sh/f/kC4KSKx35wVMuHWia69rDRudwjaLskETVQpItPhKzM6UY0Jv"
+                alt="CSN Logo"
+                width={120}
+                height={40}
+                className="h-8 w-auto"
+                priority
+              />
             </Link>
             <div className="hidden md:flex items-center space-x-6 text-sm">
               <Link href="/" className="text-white hover:text-primary transition-colors font-medium">

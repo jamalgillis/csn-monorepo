@@ -4,6 +4,7 @@ import { LiveSportsSection } from "@/components/sections/live-sports-section";
 import { SportsShowsSection } from "@/components/sections/sports-shows-section";
 import { GameHighlightsSection } from "@/components/sections/game-highlights-section";
 import { FullGamesSection } from "@/components/sections/full-games-section";
+import { GamesCarouselSection } from "@/components/sections/games-carousel-section";
 import { SportsNewsSection } from "@/components/sections/sports-news-section";
 import { BreakingNewsTicker } from "@/components/interactive/breaking-news-ticker";
 import { StaggerAnimation } from "@/components/interactive/stagger-animation";
@@ -417,6 +418,9 @@ export default function HomePage() {
           )}
 
           <LiveSportsSection />
+          <StaggerAnimation delay={150}>
+            <GamesCarouselSection />
+          </StaggerAnimation>
           <StaggerAnimation delay={200}>
             <SportsShowsSection />
           </StaggerAnimation>

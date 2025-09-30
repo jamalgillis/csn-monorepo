@@ -309,3 +309,27 @@ export const updateContentStatus = mutation({
     }
   },
 });
+
+// YOLO: Quick game team update for emergencies
+export const updateGameTeam = mutation({
+  args: {
+    gameId: v.id("games"),
+    homeTeamId: v.optional(v.id("teams")),
+    awayTeamId: v.optional(v.id("teams")),
+  },
+  handler: async (ctx, args) => {
+    const updates: any = {};
+
+    if (args.homeTeamId) {
+      updates.home_team_id = args.homeTeamId;
+    }
+
+    if (args.awayTeamId) {
+      updates.away_team_id = args.awayTeamId;
+    }
+
+    await ctx.db.patch(args.gameId, updates);
+
+    return { success: true, gameId: args.gameId };
+  }
+});

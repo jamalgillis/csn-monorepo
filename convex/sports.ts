@@ -852,6 +852,7 @@ export const endGame = internalMutation({
   }
 });
 
+
 // NEW: Hero Carousel Content Query
 export const getHeroCarouselContent = query({
   args: {},
