@@ -253,19 +253,36 @@ export const getLiveGames = query({
 export const getAllScheduledAndLiveGames = query({
   args: {},
   handler: async (ctx) => {
-    // Get live games and all scheduled games (not just today's)
-    const games = await ctx.db
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    // Get all live and scheduled games
+    const allGames = await ctx.db
       .query("games")
-      .filter((q) => 
+      .filter((q) =>
         q.or(
-          // Live games (any date)
           q.eq(q.field("status"), "in_progress"),
-          // All scheduled games (any date in future)
           q.eq(q.field("status"), "scheduled")
         )
       )
-      .order("asc") // Show upcoming games first
       .collect();
+
+    // Filter out past games (games before today) unless they're live
+    const currentAndFutureGames = allGames.filter(game => {
+      if (game.status === "in_progress") return true; // Always include live games
+      const gameDate = new Date(game.game_date);
+      return gameDate >= today; // Only include today's and future scheduled games
+    });
+
+    // Sort: live games first, then by game_date ascending (today first, then chronologically)
+    const games = currentAndFutureGames.sort((a, b) => {
+      // Live games always come first
+      if (a.status === "in_progress" && b.status !== "in_progress") return -1;
+      if (b.status === "in_progress" && a.status !== "in_progress") return 1;
+
+      // Then sort by game_date (ascending - today first, then soonest)
+      return a.game_date.localeCompare(b.game_date);
+    });
 
     const gamesWithDetails = await Promise.all(
       games.map(async (game) => {

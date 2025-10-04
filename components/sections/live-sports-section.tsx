@@ -26,14 +26,24 @@ export function LiveSportsSection() {
     )
   }
 
-  const transformedGames = todaysGames.map((game: any) => {
+  // Sort games: Live games first, then by date (soonest upcoming first)
+  const sortedGames = [...todaysGames].sort((a: any, b: any) => {
+    // Live games always come first
+    if (a.status === "in_progress" && b.status !== "in_progress") return -1;
+    if (b.status === "in_progress" && a.status !== "in_progress") return 1;
+
+    // Then sort by game_date (ascending - soonest upcoming first)
+    return new Date(a.game_date).getTime() - new Date(b.game_date).getTime();
+  });
+
+  const transformedGames = sortedGames.map((game: any) => {
     // Determine badge based on game status
     let badge;
     let subtitle;
     const gameDate = new Date(game.game_date);
     const gameTime = gameDate.toLocaleDateString('en-US', {
       weekday: 'short',
-      month: 'short', 
+      month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'

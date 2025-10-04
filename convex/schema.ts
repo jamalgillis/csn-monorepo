@@ -196,7 +196,10 @@ export default defineSchema({
     time_left: v.optional(v.string()),
     home_team_lineup: v.optional(v.array(v.id("players"))),
     away_team_lineup: v.optional(v.array(v.id("players"))),
-  }).index("by_sport", ["sport_id"]),
+  })
+    .index("by_sport", ["sport_id"])
+    .index("by_game_date", ["game_date"])
+    .index("by_status_and_date", ["status", "game_date"]),
 
   // Players table with denormalized career stats.
   players: defineTable({

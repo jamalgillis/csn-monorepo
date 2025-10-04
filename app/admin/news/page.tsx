@@ -8,52 +8,178 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
-import { Edit, Eye, Plus, AlertTriangle, TrendingUp, Clock } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Edit, Eye, Plus, AlertTriangle, TrendingUp, Clock, Trash2, RefreshCw } from "lucide-react"
 import { useState } from "react"
+import { useContent } from "@/hooks/admin/useAdminQueries"
+import { useContentMutations } from "@/hooks/admin/useAdminMutationsV2"
 
 export default function AdminNewsPage() {
-  const [articles, setArticles] = useState([
-    {
-      id: "lakers-trade",
-      title: "Lakers Complete Blockbuster Trade",
-      category: "Trade News",
-      status: "published",
-      isBreaking: true,
-      author: "Sports Desk",
-      publishedAt: "2 hours ago",
-      views: 45230,
-      comments: 156,
-    },
-    {
-      id: "mvp-race",
-      title: "MVP Race Heating Up",
-      category: "Analysis",
-      status: "draft",
-      isBreaking: false,
-      author: "John Smith",
-      publishedAt: "Draft",
-      views: 0,
-      comments: 0,
-    },
-    {
-      id: "injury-report",
-      title: "Weekly Injury Report",
-      category: "Injury News",
-      status: "scheduled",
-      isBreaking: false,
-      author: "Medical Team",
-      publishedAt: "Tomorrow 9:00 AM",
-      views: 0,
-      comments: 0,
-    },
-  ])
+  const { content, isLoading } = useContent()
+  const { createContent, updateContent, deleteContent } = useContentMutations()
 
-  const [breakingNews, setBreakingNews] = useState("Lakers complete blockbuster trade with Warriors")
+  const [contentDialogOpen, setContentDialogOpen] = useState(false)
+  const [editingContent, setEditingContent] = useState<any>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [categoryFilter, setCategoryFilter] = useState("all")
 
-  const toggleBreaking = (articleId: string) => {
-    setArticles(
-      articles.map((article) => (article.id === articleId ? { ...article, isBreaking: !article.isBreaking } : article)),
+  const [contentForm, setContentForm] = useState({
+    title: "",
+    slug: "",
+    content: "",
+    excerpt: "",
+    author_id: "",
+    category: "article" as "article" | "news" | "analysis" | "feature",
+    tags: [] as string[],
+    featured_image_url: "",
+    status: "draft" as "draft" | "published" | "scheduled" | "archived",
+    published_at: undefined as number | undefined,
+    is_featured: false,
+    is_breaking: false,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading content...</span>
+      </div>
     )
+  }
+
+  const handleCreateContent = async () => {
+    try {
+      await createContent({
+        ...contentForm,
+        slug: contentForm.slug || contentForm.title.toLowerCase().replace(/\s+/g, "-"),
+        published_at: contentForm.status === "published" ? Date.now() : undefined,
+      })
+      setContentDialogOpen(false)
+      resetForm()
+    } catch (error) {
+      console.error("Failed to create content:", error)
+    }
+  }
+
+  const handleUpdateContent = async () => {
+    if (!editingContent) return
+    try {
+      await updateContent({
+        contentId: editingContent._id,
+        ...contentForm,
+      })
+      setContentDialogOpen(false)
+      setEditingContent(null)
+      resetForm()
+    } catch (error) {
+      console.error("Failed to update content:", error)
+    }
+  }
+
+  const handleDeleteContent = async (contentId: any) => {
+    if (!confirm("Are you sure you want to delete this article?")) return
+    try {
+      await deleteContent(contentId)
+    } catch (error) {
+      console.error("Failed to delete content:", error)
+    }
+  }
+
+  const handleToggleBreaking = async (article: any) => {
+    try {
+      await updateContent({
+        contentId: article._id,
+        is_breaking: !article.is_breaking,
+      })
+    } catch (error) {
+      console.error("Failed to toggle breaking status:", error)
+    }
+  }
+
+  const openContentDialog = (article?: any) => {
+    if (article) {
+      setEditingContent(article)
+      setContentForm({
+        title: article.title || "",
+        slug: article.slug || "",
+        content: article.content || "",
+        excerpt: article.excerpt || "",
+        author_id: article.author_id || "",
+        category: article.category || "article",
+        tags: article.tags || [],
+        featured_image_url: article.featured_image_url || "",
+        status: article.status || "draft",
+        published_at: article.published_at,
+        is_featured: article.is_featured || false,
+        is_breaking: article.is_breaking || false,
+      })
+    } else {
+      setEditingContent(null)
+      resetForm()
+    }
+    setContentDialogOpen(true)
+  }
+
+  const resetForm = () => {
+    setContentForm({
+      title: "",
+      slug: "",
+      content: "",
+      excerpt: "",
+      author_id: "",
+      category: "article",
+      tags: [],
+      featured_image_url: "",
+      status: "draft",
+      published_at: undefined,
+      is_featured: false,
+      is_breaking: false,
+    })
+  }
+
+  // Filter content
+  const filteredContent = content?.filter((article) => {
+    const matchesSearch =
+      article.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.content?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesStatus = statusFilter === "all" || article.status === statusFilter
+    const matchesCategory = categoryFilter === "all" || article.category === categoryFilter
+    return matchesSearch && matchesStatus && matchesCategory
+  }) || []
+
+  const publishedToday = content?.filter(c => {
+    const today = new Date().setHours(0, 0, 0, 0)
+    const publishedDate = c.published_at ? new Date(c.published_at).setHours(0, 0, 0, 0) : 0
+    return publishedDate === today
+  }).length || 0
+
+  const totalViews = content?.reduce((sum, c) => sum + (c.view_count || 0), 0) || 0
+  const pendingReview = content?.filter(c => c.status === "draft").length || 0
+
+  const formatPublishedDate = (publishedAt?: number, status?: string) => {
+    if (status === "draft") return "Draft"
+    if (status === "scheduled" && publishedAt) {
+      const date = new Date(publishedAt)
+      return `Scheduled: ${date.toLocaleDateString()}`
+    }
+    if (publishedAt) {
+      const date = new Date(publishedAt)
+      const now = Date.now()
+      const diff = now - publishedAt
+      const hours = Math.floor(diff / (1000 * 60 * 60))
+      if (hours < 24) return `${hours} hours ago`
+      return date.toLocaleDateString()
+    }
+    return "N/A"
   }
 
   return (

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard – Shadcn Style</title>
+    <link rel="stylesheet" href="./csn_admin_theme.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <style>
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1.25rem;
+        font-size: 1rem;
+        font-weight: 500;
+        border-radius: var(--radius);
+        background: hsl(var(--primary));
+        color: hsl(var(--primary-foreground));
+        border: none;
+        cursor: pointer;
+        transition:
+          transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+          box-shadow 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .btn:hover {
+        transform: scale(1.03);
+        box-shadow: var(--shadow-md);
+      }
+      .btn:active {
+        transform: scale(0.97);
+      }
+      .fade-in {
+        opacity: 0;
+        transform: translateY(8px);
+        animation: fadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+      }
+      @keyframes fadeIn {
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+      .spinner {
+        width: 1.5rem;
+        height: 1.5rem;
+        border: 3px solid hsl(var(--muted));
+        border-top: 3px solid hsl(var(--primary));
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .skeleton {
+        height: 1.25rem;
+        background: hsl(var(--muted));
+        border-radius: 0.5rem;
+        animation: pulse 2s infinite;
+      }
+      @media (max-width: 900px) {
+        .metrics-grid {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .metrics-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body
+    class="bg-background text-foreground font-sans"
+    style="min-height: 100vh"
+  >
+    <main class="max-w-5xl mx-auto px-4 py-8 space-y-8">
+      <!-- Header -->
+      <header class="flex flex-col gap-2 fade-in">
+        <h1 class="text-3xl font-bold">Admin Dashboard</h1>
+        <div class="flex items-center gap-3 text-sm text-muted-foreground">
+          <span class="flex items-center gap-1">
+            <span
+              class="inline-block w-2 h-2 rounded-full bg-green-500 animate-pulse"
+            ></span>
+            System <span class="font-medium">Healthy</span>
+          </span>
+          <span>•</span>
+          <span>DB: <span class="font-medium">Connected</span></span>
+        </div>
+        <p class="text-muted-foreground">
+          Welcome back! Here’s what’s happening with CSN today.
+        </p>
+      </header>
+
+      <!-- Metrics Cards -->
+      <section class="grid metrics-grid grid-cols-4 gap-6 fade-in">
+        <div
+          class="metric-card bg-card p-5 border border-border rounded-lg shadow-sm flex flex-col gap-2 hover:shadow-lg transition"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Live Games</span>
+            <i data-lucide="activity" class="text-muted-foreground"></i>
+          </div>
+          <div class="text-2xl font-bold">12</div>
+          <div class="text-xs text-success">+2 from yesterday</div>
+        </div>
+        <div
+          class="metric-card bg-card p-5 border border-border rounded-lg shadow-sm flex flex-col gap-2 hover:shadow-lg transition"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Scheduled This Week</span>
+            <i data-lucide="calendar" class="text-muted-foreground"></i>
+          </div>
+          <div class="text-2xl font-bold">24</div>
+          <div class="text-xs text-info">+5 upcoming</div>
+        </div>
+        <div
+          class="metric-card bg-card p-5 border border-border rounded-lg shadow-sm flex flex-col gap-2 hover:shadow-lg transition"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Active Shows</span>
+            <i data-lucide="play" class="text-muted-foreground"></i>
+          </div>
+          <div class="text-2xl font-bold">5</div>
+          <div class="text-xs text-success">+1 new</div>
+        </div>
+        <div
+          class="metric-card bg-card p-5 border border-border rounded-lg shadow-sm flex flex-col gap-2 hover:shadow-lg transition"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-medium">Media Today</span>
+            <i data-lucide="image" class="text-muted-foreground"></i>
+          </div>
+          <div class="text-2xl font-bold">8</div>
+          <div class="text-xs text-warning">+1 upload</div>
+        </div>
+      </section>
+
+      <!-- Quick Actions -->
+      <section class="flex flex-wrap gap-4 fade-in">
+        <button class="btn"><i data-lucide="plus-circle"></i>Add Game</button>
+        <button class="btn"><i data-lucide="upload"></i>Upload Media</button>
+        <button class="btn"><i data-lucide="tv"></i>Create Show</button>
+      </section>
+
+      <!-- Recent Activity -->
+      <section class="bg-card border border-border rounded-lg p-6 fade-in">
+        <h2 class="text-lg font-semibold mb-4">Recent Activity</h2>
+        <ul class="space-y-3">
+          <li class="flex items-center gap-2 text-sm">
+            <i data-lucide="user-check" class="text-primary"></i>
+            <span><b>Jane Doe</b> published <b>Game Recap</b></span>
+            <span class="ml-auto text-muted-foreground">2m ago</span>
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <i data-lucide="calendar-plus" class="text-primary"></i>
+            <span><b>Mike Smith</b> scheduled a new game</span>
+            <span class="ml-auto text-muted-foreground">10m ago</span>
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <i data-lucide="upload" class="text-primary"></i>
+            <span><b>Admin</b> uploaded new media</span>
+            <span class="ml-auto text-muted-foreground">30m ago</span>
+          </li>
+          <li class="flex items-center gap-2 text-sm">
+            <i data-lucide="tv" class="text-primary"></i>
+            <span><b>Sarah Lee</b> created a new show</span>
+            <span class="ml-auto text-muted-foreground">1h ago</span>
+          </li>
+        </ul>
+      </section>
+    </main>
+    <script>
+      lucide.createIcons();
+    </script>
+  </body>
+</html>
+

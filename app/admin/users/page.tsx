@@ -7,52 +7,57 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Users, UserCheck, UserX, Crown, Shield, Eye, Edit } from "lucide-react"
+import { Users, UserCheck, UserX, Crown, Shield, Eye, RefreshCw } from "lucide-react"
 import { useState } from "react"
+import { useUsers } from "@/hooks/admin/useAdminQueries"
+import { useUserMutations } from "@/hooks/admin/useAdminMutationsV2"
 
 export default function AdminUsersPage() {
-  const [users, setUsers] = useState([
-    {
-      id: "1",
-      username: "SportsFan2024",
-      email: "fan@example.com",
-      role: "user",
-      status: "active",
-      joinDate: "2024-01-15",
-      lastActive: "2 hours ago",
-      totalComments: 156,
-      subscription: "premium",
-    },
-    {
-      id: "2",
-      username: "BasketballExpert",
-      email: "expert@example.com",
-      role: "moderator",
-      status: "active",
-      joinDate: "2023-08-22",
-      lastActive: "30 minutes ago",
-      totalComments: 892,
-      subscription: "premium",
-    },
-    {
-      id: "3",
-      username: "CasualViewer",
-      email: "casual@example.com",
-      role: "user",
-      status: "suspended",
-      joinDate: "2024-02-10",
-      lastActive: "1 week ago",
-      totalComments: 23,
-      subscription: "free",
-    },
-  ])
+  const { users, isLoading } = useUsers()
+  const { updateUserSubscription } = useUserMutations()
+  const [searchTerm, setSearchTerm] = useState("")
+  const [subscriptionFilter, setSubscriptionFilter] = useState("all")
 
-  const updateUserRole = (userId: string, newRole: string) => {
-    setUsers(users.map((user) => (user.id === userId ? { ...user, role: newRole } : user)))
+  const handleUpdateSubscription = async (userId: string, status: "free" | "active" | "canceled" | "expired") => {
+    try {
+      await updateUserSubscription({
+        userId: userId as any,
+        subscription_status: status
+      })
+    } catch (error) {
+      console.error("Failed to update subscription:", error)
+    }
   }
 
-  const updateUserStatus = (userId: string, newStatus: string) => {
-    setUsers(users.map((user) => (user.id === userId ? { ...user, status: newStatus } : user)))
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <RefreshCw className="h-8 w-8 animate-spin" />
+        <span className="ml-2">Loading users...</span>
+      </div>
+    )
+  }
+
+  // Filter users
+  const filteredUsers = users?.filter((user) => {
+    const matchesSearch =
+      user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.name?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSubscription = subscriptionFilter === "all" || user.subscription_status === subscriptionFilter
+    return matchesSearch && matchesSubscription
+  }) || []
+
+  const activeUsers = users?.filter(u => u.subscription_status === "active").length || 0
+  const premiumUsers = users?.filter(u => u.subscription_status === "active").length || 0
+
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+    }
+    if (email) {
+      return email.slice(0, 2).toUpperCase()
+    }
+    return "U"
   }
 
   return (
@@ -60,7 +65,7 @@ export default function AdminUsersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-          <p className="text-muted-foreground">Manage user accounts, roles, and permissions</p>
+          <p className="text-muted-foreground">Manage user accounts, roles, and subscriptions</p>
         </div>
         <div className="flex space-x-2">
           <Button variant="outline">
@@ -82,19 +87,19 @@ export default function AdminUsersPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.length}</div>
+            <div className="text-2xl font-bold">{users?.length || 0}</div>
             <p className="text-xs text-muted-foreground">Registered accounts</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Active Subscribers</CardTitle>
             <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.status === "active").length}</div>
-            <p className="text-xs text-muted-foreground">Currently active</p>
+            <div className="text-2xl font-bold">{activeUsers}</div>
+            <p className="text-xs text-muted-foreground">With active subscriptions</p>
           </CardContent>
         </Card>
 
@@ -104,19 +109,19 @@ export default function AdminUsersPage() {
             <Crown className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.subscription === "premium").length}</div>
-            <p className="text-xs text-muted-foreground">Subscribed users</p>
+            <div className="text-2xl font-bold">{premiumUsers}</div>
+            <p className="text-xs text-muted-foreground">Premium tier</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Suspended</CardTitle>
+            <CardTitle className="text-sm font-medium">Free Users</CardTitle>
             <UserX className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{users.filter((u) => u.status === "suspended").length}</div>
-            <p className="text-xs text-muted-foreground">Suspended accounts</p>
+            <div className="text-2xl font-bold">{users?.filter(u => u.subscription_status === "free").length || 0}</div>
+            <p className="text-xs text-muted-foreground">Free tier</p>
           </CardContent>
         </Card>
       </div>
@@ -125,33 +130,28 @@ export default function AdminUsersPage() {
       <Card>
         <CardHeader>
           <CardTitle>All Users</CardTitle>
-          <CardDescription>Manage user accounts, roles, and permissions</CardDescription>
+          <CardDescription>Manage user accounts and subscriptions</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex items-center space-x-4 mb-4">
-            <Select defaultValue="all">
+            <Input
+              placeholder="Search users..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-sm"
+            />
+            <Select value={subscriptionFilter} onValueChange={setSubscriptionFilter}>
               <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filter by role" />
+                <SelectValue placeholder="Subscription" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Roles</SelectItem>
-                <SelectItem value="user">User</SelectItem>
-                <SelectItem value="moderator">Moderator</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-40">
-                <SelectValue placeholder="Filter by status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="free">Free</SelectItem>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="suspended">Suspended</SelectItem>
-                <SelectItem value="banned">Banned</SelectItem>
+                <SelectItem value="canceled">Canceled</SelectItem>
+                <SelectItem value="expired">Expired</SelectItem>
               </SelectContent>
             </Select>
-            <Input placeholder="Search users..." className="max-w-sm" />
           </div>
 
           <Table>
@@ -159,82 +159,61 @@ export default function AdminUsersPage() {
               <TableRow>
                 <TableHead>User</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Subscription</TableHead>
-                <TableHead>Join Date</TableHead>
-                <TableHead>Last Active</TableHead>
-                <TableHead>Comments</TableHead>
+                <TableHead>Joined</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
+              {filteredUsers.map((user) => (
+                <TableRow key={user._id}>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src="/placeholder.svg" />
-                        <AvatarFallback>{user.username[0]}</AvatarFallback>
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarImage src={user.avatar_url} />
+                        <AvatarFallback>{getInitials(user.name, user.email)}</AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{user.username}</span>
+                      <div>
+                        <div className="font-medium">{user.name || "No name"}</div>
+                        {user.title && <div className="text-sm text-muted-foreground">{user.title}</div>}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>
-                    <Select value={user.role} onValueChange={(value) => updateUserRole(user.id, value)}>
-                      <SelectTrigger className="w-24 h-8">
+                    <Select
+                      value={user.subscription_status}
+                      onValueChange={(value: any) => handleUpdateSubscription(user._id, value)}
+                    >
+                      <SelectTrigger className="w-32">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="user">User</SelectItem>
-                        <SelectItem value="moderator">Moderator</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="free">Free</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="canceled">Canceled</SelectItem>
+                        <SelectItem value="expired">Expired</SelectItem>
                       </SelectContent>
                     </Select>
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        user.status === "active" ? "default" : user.status === "suspended" ? "secondary" : "destructive"
-                      }
-                      className={user.status === "active" ? "bg-green-500" : ""}
-                    >
-                      {user.status.toUpperCase()}
-                    </Badge>
+                    {new Date(user._creationTime).toLocaleDateString()}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={user.subscription === "premium" ? "default" : "outline"}>
-                      {user.subscription.toUpperCase()}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{user.joinDate}</TableCell>
-                  <TableCell>{user.lastActive}</TableCell>
-                  <TableCell>{user.totalComments}</TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button size="sm" variant="outline">
-                        <Eye className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="outline">
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Select value={user.status} onValueChange={(value) => updateUserStatus(user.id, value)}>
-                        <SelectTrigger className="w-20 h-8">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="suspended">Suspend</SelectItem>
-                          <SelectItem value="banned">Ban</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    <Button size="sm" variant="outline">
+                      <Eye className="h-3 w-3" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
+
+          {filteredUsers.length === 0 && (
+            <div className="text-center py-8 text-muted-foreground">
+              No users found
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

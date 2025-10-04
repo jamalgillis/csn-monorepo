@@ -254,7 +254,7 @@ export default function GamePage({ params }: GamePageProps) {
                     <h2 className="text-2xl font-bold">
                       {gameData.awayTeam.name} vs {gameData.homeTeam.name}
                     </h2>
-                    <p className="text-muted-foreground">{gameData.sport.name} • {gameData.venue}</p>
+                    <p className="text-muted-foreground">{gameData.sport} • {gameData.venue}</p>
                   </div>
                 </div>
                 <div className="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-white font-bold">
@@ -305,7 +305,7 @@ export default function GamePage({ params }: GamePageProps) {
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
                     <div className="text-white text-center">
-                      <div className="text-2xl font-bold mb-2">{gameData.sport.name}</div>
+                      <div className="text-2xl font-bold mb-2">{gameData.sport}</div>
                       <div className="text-lg mb-2">{gameData.awayTeam.name} vs {gameData.homeTeam.name}</div>
                       <div className="text-sm opacity-75">{gameData.venue}</div>
                       {gameData.status === "scheduled" && (

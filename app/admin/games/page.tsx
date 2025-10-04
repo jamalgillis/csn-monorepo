@@ -21,6 +21,8 @@ import Link from "next/link"
 import { useQuery, useMutation } from "convex/react"
 import { api } from "../../../convex/_generated/api"
 import { Id } from "../../../convex/_generated/dataModel"
+import { useGames, useSports, useTeams } from "@/hooks/admin/useAdminQueries"
+import { useGameMutations } from "@/hooks/admin/useAdminMutationsV2"
 
 interface GameWithDetails {
   id: Id<"games">  // Changed from _id to id to match Convex response
@@ -45,8 +47,11 @@ interface GameWithDetails {
 }
 
 export default function AdminGamesPage() {
-  // Fetch real games data from Convex
-  const gamesData = useQuery(api.sports.getAllGames)
+  // Fetch real games data from Convex using new admin API
+  const { games: gamesData, isLoading: gamesLoading } = useGames()
+  const { sports, isLoading: sportsLoading } = useSports()
+  const { teams, isLoading: teamsLoading } = useTeams()
+  const gameMutations = useGameMutations()
   const updateGameStateMutation = useMutation(api.sports.updateGameState)
   const updateGameStatusMutation = useMutation(api.sports.updateGameState)
 
@@ -71,7 +76,9 @@ export default function AdminGamesPage() {
   })
 
   // Loading state
-  if (!gamesData) {
+  const isLoading = gamesLoading || sportsLoading || teamsLoading
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <RefreshCw className="h-8 w-8 animate-spin" />
@@ -80,7 +87,7 @@ export default function AdminGamesPage() {
     )
   }
 
-  const games = gamesData
+  const games = gamesData || []
 
   const updateScore = async (gameId: Id<"games">, team: "home" | "away", newScore: number) => {
     const game = games.find(g => g.id === gameId)

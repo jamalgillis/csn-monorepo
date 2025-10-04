@@ -92,6 +92,22 @@ export function ScheduleCalendar({
     });
   };
 
+  // Memoize the modifiers to prevent re-creation on every render
+  const modifiers = React.useMemo(() => ({
+    hasGames: (date: Date) => {
+      const dateKey = date.toDateString();
+      return gamesByDate.has(dateKey) && gamesByDate.get(dateKey)!.length > 0;
+    }
+  }), [gamesByDate]);
+
+  const modifiersStyles = React.useMemo(() => ({
+    hasGames: {
+      backgroundColor: 'hsl(var(--primary))',
+      color: 'hsl(var(--primary-foreground))',
+      fontWeight: 'bold'
+    }
+  }), []);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Calendar View */}
@@ -108,19 +124,8 @@ export function ScheduleCalendar({
             selected={selectedDate}
             onSelect={handleDateSelect}
             className="rounded-md border"
-            modifiers={{
-              hasGames: (date) => {
-                const dateKey = date.toDateString();
-                return gamesByDate.has(dateKey) && gamesByDate.get(dateKey)!.length > 0;
-              }
-            }}
-            modifiersStyles={{
-              hasGames: {
-                backgroundColor: 'hsl(var(--primary))',
-                color: 'hsl(var(--primary-foreground))',
-                fontWeight: 'bold'
-              }
-            }}
+            modifiers={modifiers}
+            modifiersStyles={modifiersStyles}
           />
           <div className="mt-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
