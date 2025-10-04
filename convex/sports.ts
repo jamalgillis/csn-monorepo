@@ -164,6 +164,7 @@ export const getAllGames = query({
           awayScore: game.away_score || 0,
           game_date: game.game_date,
           venue: game.venue,
+          video_url: game.video_url,
           gameState: gameState ? {
             quarter: gameState.period_display,
             timeLeft: gameState.time_left || "0:00"
@@ -238,6 +239,7 @@ export const getLiveGames = query({
           awayScore: game.away_score || 0,
           game_date: game.game_date,
           venue: game.venue,
+          video_url: game.video_url,
           gameState: gameState ? {
             quarter: gameState.period_display,
             timeLeft: gameState.time_left || "0:00"
@@ -315,6 +317,7 @@ export const getAllScheduledAndLiveGames = query({
           awayScore: game.away_score || 0,
           game_date: game.game_date,
           venue: game.venue,
+          video_url: game.video_url,
           gameState: gameState ? {
             quarter: gameState.period_display,
             timeLeft: gameState.time_left || "0:00"
