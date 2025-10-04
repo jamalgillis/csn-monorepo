@@ -558,7 +558,7 @@ export const getHeroContent = query({
       description: "The premier destination for Central Texas sports coverage"
     };
   }
-});;
+});
 
 // Update game state (used in admin)
 export const updateGameState = mutation({
