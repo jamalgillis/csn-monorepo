@@ -293,30 +293,37 @@ export default function GamePage({ params }: GamePageProps) {
 
             {/* Video Player */}
             <div className="bg-card rounded-lg border border-border overflow-hidden">
-              <div className="aspect-video">
-                {gameData.video_url ? (
+              {gameData.video_url ? (
+                <div style={{ position: "relative", paddingTop: "56.25%" }}>
                   <iframe
                     src={gameData.video_url}
-                    className="w-full h-full rounded-lg"
-                    allow="autoplay; fullscreen; picture-in-picture"
-                    allowFullScreen
+                    style={{
+                      border: "none",
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      height: "100%",
+                      width: "100%"
+                    }}
+                    allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture;"
+                    allowFullScreen={true}
                     title={`${gameData.awayTeam.name} vs ${gameData.homeTeam.name} Live Stream`}
                   />
-                ) : (
-                  <div className="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
-                    <div className="text-white text-center">
-                      <div className="text-2xl font-bold mb-2">{gameData.sport}</div>
-                      <div className="text-lg mb-2">{gameData.awayTeam.name} vs {gameData.homeTeam.name}</div>
-                      <div className="text-sm opacity-75">{gameData.venue}</div>
-                      {gameData.status === "scheduled" && (
-                        <div className="text-sm mt-2 opacity-75">
-                          {new Date(gameData.game_date).toLocaleDateString()}
-                        </div>
-                      )}
-                    </div>
+                </div>
+              ) : (
+                <div className="aspect-video w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center">
+                  <div className="text-white text-center">
+                    <div className="text-2xl font-bold mb-2">{gameData.sport}</div>
+                    <div className="text-lg mb-2">{gameData.awayTeam.name} vs {gameData.homeTeam.name}</div>
+                    <div className="text-sm opacity-75">{gameData.venue}</div>
+                    {gameData.status === "scheduled" && (
+                      <div className="text-sm mt-2 opacity-75">
+                        {new Date(gameData.game_date).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
             {/* Live Chat */}
