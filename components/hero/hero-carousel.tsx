@@ -143,7 +143,7 @@ export function HeroCarousel() {
             </span>
           </div>
           <div className="flex items-center space-x-4 text-sm">
-            <span className="font-bold text-white animate-bounce">
+            <span className="font-bold text-white">
               {bannerConfig.rightText}
             </span>
             <Button
