@@ -305,7 +305,7 @@ export default function GamePage({ params }: GamePageProps) {
                       height: "100%",
                       width: "100%"
                     }}
-                    allow="accelerometer; gyroscope; encrypted-media; picture-in-picture;"
+                    allow="accelerometer; gyroscope; encrypted-media; picture-in-picture; playsinline"
                     allowFullScreen={true}
                     title={`${gameData.awayTeam.name} vs ${gameData.homeTeam.name} Live Stream`}
                   />
