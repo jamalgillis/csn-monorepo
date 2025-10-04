@@ -400,6 +400,34 @@ export const updateContentVideoUrl = mutation({
   },
 });
 
+export const updateGameVideoUrl = mutation({
+  args: {
+    gameId: v.id("games"),
+    videoUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.gameId, {
+      video_url: args.videoUrl
+    });
+    return { updated: true };
+  },
+});
+
+export const bulkUpdateGameVideoUrls = mutation({
+  args: {
+    gameIds: v.array(v.id("games")),
+    videoUrl: v.string(),
+  },
+  handler: async (ctx, args) => {
+    for (const gameId of args.gameIds) {
+      await ctx.db.patch(gameId, {
+        video_url: args.videoUrl
+      });
+    }
+    return { updated: true, count: args.gameIds.length };
+  },
+});
+
 // Get hero content (featured content for homepage)
 export const getHeroContent = query({
   args: {},
