@@ -5,13 +5,13 @@ export default defineSchema({
   // Content table for sports streaming content
   content: defineTable({
     type: v.union(
-      v.literal("show"), 
-      v.literal("podcast"), 
-      v.literal("feature"), 
-      v.literal("trailer"), 
-      v.literal("hype-video"), 
-      v.literal("highlight"), 
-      v.literal("clip"), 
+      v.literal("show"),
+      v.literal("podcast"),
+      v.literal("feature"),
+      v.literal("trailer"),
+      v.literal("hype-video"),
+      v.literal("highlight"),
+      v.literal("clip"),
       v.literal("moment")
     ),
     title: v.string(),
@@ -49,10 +49,32 @@ export default defineSchema({
     city: v.optional(v.string()),
     related_team_ids: v.optional(v.array(v.id("teams"))),
     related_player_ids: v.optional(v.array(v.id("players"))),
+
+    // Authorship fields (Story 1.3 - added for VOD admin tracking)
+    created_by: v.optional(v.id("users")), // Admin who created
+    updated_by: v.optional(v.id("users")), // Last admin who edited
+    created_at: v.optional(v.number()),
+    updated_at: v.optional(v.number()),
+
+    // Enhanced workflow
+    workflow_status: v.optional(v.union(
+      v.literal("draft"),
+      v.literal("pending_review"),
+      v.literal("approved"),
+      v.literal("published"),
+      v.literal("archived")
+    )),
+    reviewed_by: v.optional(v.id("users")),
+    reviewed_at: v.optional(v.number()),
+
+    // Link to media assets
+    media_asset_ids: v.optional(v.array(v.id("media_assets"))),
   })
     .index("by_featured", ["featured"])
     .index("by_trending", ["trending"])
     .index("by_new_release", ["new_release"])
+    .index("by_created_by", ["created_by"])
+    .index("by_workflow_status", ["workflow_status"])
     .searchIndex("search_content", { searchField: "title", filterFields: ["type", "status", "tag_names", "year", "rating"] }),
   
   // Tags table with a 'group' for classification.
@@ -318,7 +340,150 @@ export default defineSchema({
     status: v.union(v.literal("active"), v.literal("unsubscribed")),
     subscribed_at: v.string(),
   }).index("by_email", ["email"]),
-  
+
+  // Media Assets table for VOD upload management
+  media_assets: defineTable({
+    // Basic info
+    title: v.string(),
+    description: v.optional(v.string()),
+
+    // File details
+    file_type: v.union(v.literal("video"), v.literal("image"), v.literal("audio")),
+
+    // UploadThing integration
+    uploadthing_key: v.string(),
+    uploadthing_url: v.string(),
+
+    // Video metadata (for videos only)
+    duration_seconds: v.optional(v.number()),
+    video_width: v.optional(v.number()),
+    video_height: v.optional(v.number()),
+
+    // Optional HLS streaming (future)
+    hls_playlist_url: v.optional(v.string()),
+
+    // Organization
+    folder_path: v.optional(v.string()), // Simple path string: "sports/volleyball/highlights"
+    tags: v.array(v.string()),
+
+    // Access control
+    status: v.union(
+      v.literal("uploading"),
+      v.literal("ready"),
+      v.literal("failed"),
+      v.literal("archived")
+    ),
+
+    // Authorship
+    uploaded_by: v.id("users"),
+    created_at: v.number(),
+
+    // Simple analytics
+    view_count: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_uploader", ["uploaded_by"])
+    .index("by_type", ["file_type"])
+    .searchIndex("search_media", {
+      searchField: "title",
+      filterFields: ["status", "file_type", "tags"]
+    }),
+
+  // Content Audit Log table for change tracking
+  content_audit_log: defineTable({
+    // What was changed
+    entity_type: v.union(v.literal("content"), v.literal("media_asset")),
+    entity_id: v.string(), // Use string to support both types
+
+    // Action performed
+    action: v.union(
+      v.literal("created"),
+      v.literal("updated"),
+      v.literal("published"),
+      v.literal("archived"),
+      v.literal("deleted")
+    ),
+
+    // Who did it
+    user_id: v.id("users"),
+    user_email: v.string(),
+    user_role: v.string(),
+
+    // What changed (simple JSON)
+    changes: v.optional(v.any()), // Store before/after diffs
+
+    // When
+    timestamp: v.number(),
+  })
+    .index("by_entity", ["entity_type", "entity_id"])
+    .index("by_user", ["user_id"])
+    .index("by_timestamp", ["timestamp"]),
+
+  // User Watch Progress table for Continue Watching feature (Story 1.4)
+  user_watch_progress: defineTable({
+    user_id: v.id("users"),
+    content_id: v.id("content"),
+
+    // Playback state
+    position_seconds: v.number(),
+    duration_seconds: v.number(),
+    completion_percentage: v.number(), // 0-100
+
+    // Real-time updates
+    last_watched_at: v.number(),
+    device_type: v.optional(v.string()), // "desktop", "mobile", "tablet"
+
+    // Status
+    completed: v.boolean(), // true if completion_percentage >= 90
+  })
+    .index("by_user", ["user_id"])
+    .index("by_user_content", ["user_id", "content_id"])
+    .index("by_last_watched", ["user_id", "last_watched_at"]),
+
+  // Live Stream Sessions table for real-time viewer tracking (Story 1.4)
+  live_stream_sessions: defineTable({
+    game_id: v.id("games"),
+    user_id: v.optional(v.id("users")), // Anonymous viewers allowed
+    session_id: v.string(), // UUID for tracking
+
+    // Real-time presence
+    joined_at: v.number(),
+    last_heartbeat: v.number(), // Updated every 30s
+    active: v.boolean(),
+
+    // Device info
+    device_type: v.string(), // "desktop", "mobile", "tablet"
+    quality: v.optional(v.string()), // "720p", "1080p"
+  })
+    .index("by_game_active", ["game_id", "active"])
+    .index("by_session", ["session_id"])
+    .index("by_heartbeat", ["last_heartbeat"]),
+
+  // Live Chat Messages table for real-time game chat (Story 1.4)
+  live_chat_messages: defineTable({
+    game_id: v.id("games"),
+    user_id: v.id("users"),
+
+    // Message
+    message: v.string(),
+
+    // User info (denormalized for speed)
+    user_name: v.string(),
+    user_avatar: v.optional(v.string()),
+
+    // Moderation
+    status: v.union(
+      v.literal("active"),
+      v.literal("hidden"),
+      v.literal("deleted")
+    ),
+
+    // Timestamp
+    created_at: v.number(),
+  })
+    .index("by_game", ["game_id", "created_at"])
+    .index("by_user", ["user_id"]),
+
   // User interaction tables.
   watchlist: defineTable({
     user_id: v.id("users"),
