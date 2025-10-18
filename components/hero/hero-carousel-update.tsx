@@ -151,6 +151,7 @@ export function HeroCarouselUpdate() {
         className={`text-2xl md:text-3xl lg:text-5xl uppercase z-20 text-slate-50 font-bold justify-self-center self-center row-start-2 text-center transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
       >
         {currentItem.title}
+        <span>{currentItem.gameTime}</span>
       </h1>
       <div className="bg-slate-900 absolute top-0 bottom-0 left-0 right-0">
         {/* Background image - only render if thumbnail exists */}
@@ -197,7 +198,7 @@ export function HeroCarouselUpdate() {
         <p
           className={`text-slate-50 font-medium content-end transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
         >
-          {currentItem.title}
+          {currentItem.title} {currentItem.gameTime}
         </p>
         {/* Navigation Controls */}
         <div className="col-span-2 flex items-end justify-end gap-4">
