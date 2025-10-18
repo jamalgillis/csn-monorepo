@@ -147,18 +147,22 @@ export function HeroCarouselUpdate() {
       className="relative w-svw h-dvh grid grid-rows-3 snap-start cursor-pointer"
       onClick={() => handleHeroClick(currentItem)}
     >
-      <h1 className={`text-2xl md:text-3xl lg:text-5xl uppercase z-20 text-slate-50 font-bold justify-self-center self-center row-start-2 text-center transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+      <h1
+        className={`text-2xl md:text-3xl lg:text-5xl uppercase z-20 text-slate-50 font-bold justify-self-center self-center row-start-2 text-center transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
+      >
         {currentItem.title}
       </h1>
       <div className="bg-slate-900 absolute top-0 bottom-0 left-0 right-0">
         {/* Background image - only render if thumbnail exists */}
         {currentItem.thumbnail ? (
           <>
-            <div className={`bg-black opacity-25 absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-25'}`}></div>
+            <div
+              className={`bg-black opacity-25 absolute top-0 left-0 w-full h-full transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-25"}`}
+            ></div>
             <img
               src={currentItem.thumbnail}
               alt={currentItem.title}
-              className={`object-cover w-full h-full transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}
+              className={`object-cover w-full h-full transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
               loading="eager"
             />
           </>
@@ -190,7 +194,9 @@ export function HeroCarouselUpdate() {
 
       <div className="w-full h-full bg-gray-900 absolute -z-20"></div>
       <div className="row-start-3 grid grid-cols-3 grid-rows-1 p-5 relative z-10 bg-gradient-to-b">
-        <p className={`text-slate-50 font-extrabold text-3xl content-end transition-opacity duration-500 ${isTransitioning ? 'opacity-0' : 'opacity-100'}`}>
+        <p
+          className={`text-slate-50 font-medium content-end transition-opacity duration-500 ${isTransitioning ? "opacity-0" : "opacity-100"}`}
+        >
           {currentItem.title}
         </p>
         {/* Navigation Controls */}
