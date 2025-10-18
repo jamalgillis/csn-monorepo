@@ -26,7 +26,10 @@ export function Header() {
   // Close search results when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+      if (
+        searchRef.current &&
+        !searchRef.current.contains(event.target as Node)
+      ) {
         setShowResults(false);
       }
     }
@@ -35,12 +38,15 @@ export function Header() {
   }, []);
 
   return (
-    <nav className="bg-black/90 backdrop-blur-md border-b border-gray-800 fixed w-full top-0 z-50">
+    <nav className="bg-black/90 backdrop-blur-md border-b border-gray-800 sticky w-full top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo and Navigation */}
           <div className="flex items-center space-x-4">
-            <Link href="/" className="flex items-center hover:opacity-80 transition-opacity">
+            <Link
+              href="/"
+              className="flex items-center hover:opacity-80 transition-opacity"
+            >
               <Image
                 src="https://q1u9idchx6.ufs.sh/f/kC4KSKx35wVMuHWia69rDRudwjaLskETVQpItPhKzM6UY0Jv"
                 alt="CSN Logo"
@@ -128,7 +134,9 @@ export function Header() {
                     <div className="py-2">
                       {searchResults.map((result: any) => {
                         const isGame = result.type === "game";
-                        const href = isGame ? `/games/${result._id}` : `/shows/${result._id}`;
+                        const href = isGame
+                          ? `/games/${result._id}`
+                          : `/shows/${result._id}`;
 
                         return (
                           <Link
@@ -148,17 +156,27 @@ export function Header() {
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <h4 className="text-white font-medium truncate">{result.title}</h4>
-                              <p className="text-sm text-gray-400 truncate">{result.description}</p>
+                              <h4 className="text-white font-medium truncate">
+                                {result.title}
+                              </h4>
+                              <p className="text-sm text-gray-400 truncate">
+                                {result.description}
+                              </p>
                               <div className="flex items-center gap-2 mt-1">
-                                <span className={`text-xs capitalize ${isGame ? 'text-green-400' : 'text-primary'}`}>
+                                <span
+                                  className={`text-xs capitalize ${isGame ? "text-green-400" : "text-primary"}`}
+                                >
                                   {result.type}
                                 </span>
                                 {result.year && (
-                                  <span className="text-xs text-gray-500">• {result.year}</span>
+                                  <span className="text-xs text-gray-500">
+                                    • {result.year}
+                                  </span>
                                 )}
                                 {isGame && result.status === "in_progress" && (
-                                  <span className="text-xs text-red-400">• LIVE</span>
+                                  <span className="text-xs text-red-400">
+                                    • LIVE
+                                  </span>
                                 )}
                               </div>
                             </div>
@@ -176,7 +194,8 @@ export function Header() {
                   elements: {
                     avatarBox: "w-9 h-9",
                     userButtonPopoverCard: "bg-gray-900 border border-gray-700",
-                    userButtonPopoverActionButton: "text-white hover:bg-gray-800",
+                    userButtonPopoverActionButton:
+                      "text-white hover:bg-gray-800",
                     userButtonPopoverActionButtonText: "text-white",
                     userButtonPopoverFooter: "hidden",
                   },
