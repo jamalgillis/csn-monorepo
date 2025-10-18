@@ -1,5 +1,6 @@
 import { Header } from "@/components/navigation/header";
 import { HeroCarousel } from "@/components/hero/hero-carousel";
+import { HeroCarouselUpdate } from "@/components/hero/hero-carousel-update";
 import { LiveSportsSection } from "@/components/sections/live-sports-section";
 import { SportsShowsSection } from "@/components/sections/sports-shows-section";
 import { GameHighlightsSection } from "@/components/sections/game-highlights-section";
@@ -31,8 +32,8 @@ export default function HomePage() {
       <div className="hidden">
         <BreakingNewsTicker />
       </div>
-      <HeroCarousel />
-      <main className="relative z-10 -mt-16 pt-16 pb-12">
+      <HeroCarouselUpdate />
+      <main className="relative z-10 pt-16 pb-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {false && (
             <div className="bg-card/50 backdrop-blur-sm border border-border rounded-xl p-8 mt-8">

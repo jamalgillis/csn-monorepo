@@ -12,12 +12,15 @@ This directory contains comprehensive documentation for the Sports Content Platf
 | **[Admin Guide](./ADMIN_GUIDE.md)** | Administrators | Navigate admin dashboard, manage content and users |
 | **[Platform Capabilities](./PLATFORM_CAPABILITIES.md)** | All Users | Understand what the platform can do and where to find features |
 
-### 🏗️ Technical Documentation  
+### 🏗️ Technical Documentation
 
 | Document | Audience | Purpose |
 |----------|----------|---------|
 | **[Technical Overview](./TECHNICAL_OVERVIEW.md)** | Developers & Stakeholders | System architecture, tech stack, data flow |
 | **[API Documentation](./API_DOCUMENTATION.md)** | Developers | Complete API reference, endpoints, examples |
+| **[Component Reference](./COMPONENT_REFERENCE.md)** | Developers | Detailed component documentation and usage |
+| **[Hero Carousel Architecture](./HERO_CAROUSEL_ARCHITECTURE.md)** | Developers | Complete hero carousel system documentation with ASCII diagrams |
+| **[Changelog](./CHANGELOG.md)** | All | Recent updates and version history |
 | **[Convex Migration Plan](../CONVEX_MIGRATION_PLAN.md)** | Developers | Backend migration and enhancement plan |
 
 ### 📋 Planning Documents

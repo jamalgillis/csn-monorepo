@@ -159,6 +159,71 @@ export const removeRating = mutation({
   },
 });
 
+// Search content and games by title
+export const searchContent = query({
+  args: { searchText: v.string() },
+  handler: async (ctx, args) => {
+    if (args.searchText.length < 2) {
+      return [];
+    }
+
+    // Search published content (shows, podcasts, etc.)
+    const contentResults = await ctx.db
+      .query("content")
+      .withSearchIndex("search_content", (q) =>
+        q.search("title", args.searchText)
+      )
+      .filter((q) => q.eq(q.field("status"), "published"))
+      .take(5);
+
+    // Search games by team names
+    const allGames = await ctx.db
+      .query("games")
+      .collect();
+
+    const searchLower = args.searchText.toLowerCase();
+    const gameResults = [];
+
+    for (const game of allGames) {
+      const homeTeam = await ctx.db.get(game.home_team_id);
+      const awayTeam = await ctx.db.get(game.away_team_id);
+      const sport = await ctx.db.get(game.sport_id);
+
+      if (homeTeam && awayTeam && sport) {
+        const homeTeamName = homeTeam.name.toLowerCase();
+        const awayTeamName = awayTeam.name.toLowerCase();
+        const sportName = sport.name.toLowerCase();
+
+        if (
+          homeTeamName.includes(searchLower) ||
+          awayTeamName.includes(searchLower) ||
+          sportName.includes(searchLower)
+        ) {
+          gameResults.push({
+            _id: game._id,
+            _creationTime: game._creationTime,
+            type: "game" as const,
+            title: `${awayTeam.name} @ ${homeTeam.name}`,
+            description: `${sport.name} - ${game.status}`,
+            game_date: game.game_date,
+            status: game.status,
+            sport: sport.name,
+            home_score: game.home_score,
+            away_score: game.away_score,
+            venue: game.venue,
+            poster_url: homeTeam.logo_url || null,
+          });
+
+          if (gameResults.length >= 5) break;
+        }
+      }
+    }
+
+    // Combine results (content first, then games)
+    return [...contentResults, ...gameResults];
+  },
+});
+
 // ============================================================================
 // ADMIN CONTENT MANAGEMENT (Story 1.3 - Enhanced with Authorship)
 // ============================================================================

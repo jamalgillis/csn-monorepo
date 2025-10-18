@@ -212,6 +212,7 @@ export default defineSchema({
     away_score: v.optional(v.number()),
     venue: v.optional(v.string()),
     video_url: v.optional(v.string()),
+    hero_image_url: v.optional(v.string()), // Hero carousel background image
     related_content_ids: v.optional(v.array(v.id("content"))),
     broadcast_keys: v.optional(v.array(v.object({ provider: v.string(), key: v.string(), url: v.optional(v.string()) }))),
     quarter: v.optional(v.number()),
