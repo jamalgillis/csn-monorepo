@@ -95,15 +95,16 @@ export default defineSchema({
   game_events: defineTable({
     game_id: v.id("games"),
     event_type: v.union(
-      v.literal("period_start"), 
-      v.literal("period_end"), 
-      v.literal("score"), 
-      v.literal("timeout"), 
-      v.literal("substitution"), 
+      v.literal("period_start"),
+      v.literal("period_end"),
+      v.literal("score"),
+      v.literal("timeout"),
+      v.literal("substitution"),
       v.literal("penalty"),
-      v.literal("turnover"), 
-      v.literal("rebound"), 
-      v.literal("foul")
+      v.literal("turnover"),
+      v.literal("rebound"),
+      v.literal("foul"),
+      v.literal("status_change")
     ),
     period_info: v.optional(v.object({
       period_number: v.number(),
@@ -189,6 +190,7 @@ export default defineSchema({
     away_score: v.optional(v.number()),
     venue: v.optional(v.string()),
     video_url: v.optional(v.string()),
+    hero_image_url: v.optional(v.string()), // Hero carousel background image
     related_content_ids: v.optional(v.array(v.id("content"))),
     broadcast_keys: v.optional(v.array(v.object({ provider: v.string(), key: v.string(), url: v.optional(v.string()) }))),
     quarter: v.optional(v.number()),

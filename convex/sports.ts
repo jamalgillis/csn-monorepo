@@ -879,7 +879,7 @@ export const getHeroCarouselContent = query({
           priority: 1, // Highest priority
           title: `${awayTeam.name} @ ${homeTeam.name}`,
           subtitle: `${sport.name} - Live`,
-          thumbnail: homeTeam.logo_url || "/placeholder-game.jpg",
+          thumbnail: game.hero_image_url || homeTeam.logo_url || "/placeholder-game.jpg",
           isLive: true,
           navigationUrl: `/games/${game._id}`,
           homeTeam: homeTeam.name,
@@ -965,7 +965,7 @@ export const getHeroCarouselContent = query({
           priority: 3,
           title: `${awayTeam.name} @ ${homeTeam.name}`,
           subtitle: `${sport.name} - Today`,
-          thumbnail: homeTeam.logo_url || "/placeholder-game.jpg",
+          thumbnail: game.hero_image_url || homeTeam.logo_url || "/placeholder-game.jpg",
           isLive: false,
           navigationUrl: `/games/${game._id}`,
           homeTeam: homeTeam.name,

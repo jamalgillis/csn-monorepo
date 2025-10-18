@@ -92,6 +92,9 @@ components/
 │   ├── header.tsx        # Main navigation
 │   ├── footer.tsx        # Site footer
 │   └── sidebar.tsx       # Admin sidebar
+├── hero/
+│   ├── hero-carousel.tsx        # Original hero carousel
+│   └── hero-carousel-update.tsx # Enhanced carousel with auto-rotation
 ├── features/
 │   ├── games/
 │   │   ├── game-card.tsx      # Game display component
@@ -110,6 +113,81 @@ components/
     ├── search-bar.tsx         # Search functionality
     └── loading-spinner.tsx    # Loading states
 ```
+
+### Key Components Deep Dive
+
+#### Hero Carousel (`components/hero/hero-carousel-update.tsx`)
+**Purpose:** Full-screen carousel showcasing live games, shows, and featured content with auto-rotation.
+
+**Features:**
+- 8-second auto-rotation with manual controls
+- Real-time Convex data integration
+- Click-to-navigate on entire hero area
+- Previous/Next navigation arrows
+- Dot indicators for position tracking
+- Play/Pause auto-rotation toggle
+- Responsive minimalist design
+
+**Props:** None (fetches data via Convex)
+
+**Data Source:** `api.sports.getHeroCarouselContent`
+
+**Supported Content Types:**
+- `live_game` - Live games with scores
+- `live_show` - Live podcasts/shows
+- `scheduled_game` - Today's upcoming games
+- `upcoming_game` - Future scheduled games
+- `featured_content` - Featured articles/content
+
+**Usage Example:**
+```tsx
+import { HeroCarouselUpdate } from "@/components/hero/hero-carousel-update"
+
+export default function HomePage() {
+  return (
+    <div>
+      <HeroCarouselUpdate />
+      {/* Rest of page content */}
+    </div>
+  )
+}
+```
+
+**State Management:**
+- `currentIndex` - Active slide index
+- `isAutoPlaying` - Auto-rotation enabled status
+- `isPaused` - Temporary pause state (15s after manual nav)
+
+**Key Functions:**
+- `nextSlide()` - Advance to next item
+- `prevSlide()` - Go to previous item
+- `goToSlide(index)` - Jump to specific index
+- `handleHeroClick(item)` - Navigate to content URL
+
+**Image Source Flow:**
+```
+Backend Query (sports.ts:856)
+        │
+        ├─► Live Games
+        │   └─► game.hero_image_url → homeTeam.logo_url → "/placeholder-game.jpg"
+        │
+        ├─► Live Shows
+        │   └─► show.backdrop_url → show.poster_url
+        │
+        ├─► Scheduled Games
+        │   └─► game.hero_image_url → homeTeam.logo_url → "/placeholder-game.jpg"
+        │
+        └─► Featured Content
+            └─► content.backdrop_url → content.poster_url
+```
+
+**Database Fields for Images:**
+| Table | Field | Purpose | Added |
+|-------|-------|---------|-------|
+| `games` | `hero_image_url` | Dedicated hero carousel image | 2025-01-16 |
+| `teams` | `logo_url` | Team logo (fallback for games) | Existing |
+| `content` | `backdrop_url` | Widescreen image (16:9) | Existing |
+| `content` | `poster_url` | Portrait image (fallback) | Existing |
 
 ### Styling System
 We use **Tailwind CSS** with a custom sports theme:
@@ -203,6 +281,95 @@ export const getGameById = query({
     return await ctx.db.get(args.gameId);
   },
 });
+```
+
+**Example: Hero Carousel Query (sports.ts:856)**
+```typescript
+export const getHeroCarouselContent = query({
+  args: {},
+  handler: async (ctx) => {
+    const carouselItems = [];
+
+    // 1. Get live games (priority 1)
+    const liveGames = await ctx.db
+      .query("games")
+      .filter((q) => q.eq(q.field("status"), "in_progress"))
+      .collect();
+
+    for (const game of liveGames) {
+      const [homeTeam, awayTeam, sport] = await Promise.all([
+        ctx.db.get(game.home_team_id),
+        ctx.db.get(game.away_team_id),
+        ctx.db.get(game.sport_id)
+      ]);
+
+      if (homeTeam && awayTeam && sport) {
+        carouselItems.push({
+          id: game._id,
+          type: "live_game",
+          priority: 1,
+          title: `${awayTeam.name} @ ${homeTeam.name}`,
+          // Image priority: hero_image_url → logo_url → placeholder
+          thumbnail: game.hero_image_url || homeTeam.logo_url || "/placeholder-game.jpg",
+          // ... other fields
+        });
+      }
+    }
+
+    // 2-5. Query shows, scheduled games, featured content...
+    // (See convex/sports.ts:856-1011 for complete implementation)
+
+    return {
+      items: carouselItems,
+      hasLiveContent: carouselItems.some(i => i.isLive),
+      liveGameCount: liveGames.length,
+      // ... other metadata
+    };
+  },
+});
+```
+
+**Query Execution Flow:**
+```
+┌──────────────────────────────────────────────────────────┐
+│           getHeroCarouselContent Query Flow              │
+├──────────────────────────────────────────────────────────┤
+│                                                          │
+│  1. Query DB Tables (Parallel where possible)            │
+│     ┌────────────────────────────────────┐              │
+│     │ • games (live: in_progress)        │              │
+│     │ • games (scheduled: today)         │              │
+│     │ • content (featured shows)         │              │
+│     │ • content (featured content)       │              │
+│     └────────────┬───────────────────────┘              │
+│                  │                                       │
+│  2. Join Related Data                                    │
+│     ┌────────────▼───────────────────────┐              │
+│     │ For each game:                     │              │
+│     │   • Fetch homeTeam (teams table)   │              │
+│     │   • Fetch awayTeam (teams table)   │              │
+│     │   • Fetch sport (sports table)     │              │
+│     │ Promise.all for parallel loading   │              │
+│     └────────────┬───────────────────────┘              │
+│                  │                                       │
+│  3. Build CarouselItems                                  │
+│     ┌────────────▼───────────────────────┐              │
+│     │ Map each record to CarouselItem:   │              │
+│     │   • id, type, priority             │              │
+│     │   • title, subtitle                │              │
+│     │   • thumbnail (with fallbacks)     │              │
+│     │   • navigationUrl                  │              │
+│     │   • metadata (scores, times, etc)  │              │
+│     └────────────┬───────────────────────┘              │
+│                  │                                       │
+│  4. Sort & Return                                        │
+│     ┌────────────▼───────────────────────┐              │
+│     │ • Sort by priority (1-5)           │              │
+│     │ • Add metadata (counts, flags)     │              │
+│     │ • Return complete carousel data    │              │
+│     └────────────────────────────────────┘              │
+│                                                          │
+└──────────────────────────────────────────────────────────┘
 ```
 
 #### 2. Mutations (Write Data)
